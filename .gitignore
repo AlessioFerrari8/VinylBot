@@ -1,0 +1,19 @@
+# Dipendenze
+node_modules/
+ 
+# Variabili d'ambiente (contiene token e segreti!)
+.env
+ 
+# Token Spotify salvati degli utenti (dati sensibili!)
+tokens.json
+ 
+# Log
+logs/
+*.log
+npm-debug.log*
+ 
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+AURA.md
