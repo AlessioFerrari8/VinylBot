@@ -11,8 +11,9 @@ const SCOPES = [
 ]
 
 /**
- * crea un'istanza SpotifyWebApi 
- * @returns l'istanza creata
+ * Crea un'istanza SpotifyWebApi con le credenziali dell'app.
+ * 
+ * @returns {SpotifyWebApi} Un'istanza SpotifyWebApi non autenticata, con le credenziali dell'app caricate da .env
  */
 function makeApi() {
     return new SpotifyWebApi({
@@ -23,10 +24,14 @@ function makeApi() {
 }   
 
 /**
- * crea un'istanza già autenticata per quell'utente, 
- * rinnovando il token se scaduto. Lancia errore `NOT_AUTHENTICATED` se l'utente non ha mai fatto `/auth`
- * @param {*} userId id dell'utente
- * @returns l'istanza autenticata
+ * Restituisce un'istanza SpotifyWebApi già autenticata per l'utente specificato.
+ * 
+ * Se il token di accesso è scaduto, lo rinstruisce automaticamente.
+ * Se l'utente non ha mai completato l'autenticazione, lancia un errore.
+ * 
+ * @param {string} userId - L'ID dell'utente Discord
+ * @returns {Promise<SpotifyWebApi>} Un'istanza SpotifyWebApi autenticata e pronta all'uso
+ * @throws {Error} Lancia l'errore 'NOT_AUTHENTICATED' se l'utente non ha mai fatto /auth
  */
 async function apiForUser(userId) {
     // prendo i token dell'utente
@@ -47,28 +52,70 @@ async function apiForUser(userId) {
     return api;
 }
 
-
+/**
+ * Genera il link OAuth2 da mandare all'utente per l'autenticazione.
+ * 
+ * L'utente cliccherà questo link e farà login con le sue credenziali Spotify.
+ * Dopo il login, Spotify reindirizzerà a `SPOTIFY_REDIRECT_URI` con un codice.
+ * 
+ * @param {string} userId - L'ID dell'utente Discord (usato come state per sicurezza)
+ * @returns {string} L'URL OAuth2 completo da inviare all'utente
+ */
 function getAuthUrl(userId) {
     const api = makeApi();
     return api.createAuthorizeURL(SCOPES, userId);
 }
 
+/**
+ * Scambia il codice OAuth2 con i token di accesso e rinfresco.
+ * 
+ * Viene chiamato quando Spotify redirige l'utente indietro con il codice.
+ * I token ottenuti vengono salvati nel tokenStore per usi futuri.
+ * 
+ * @param {string} userId - L'ID dell'utente Discord
+ * @param {string} code - Il codice di autorizzazione fornito da Spotify
+ * @returns {Promise<void>}
+ */
 async function handleCallback(userId, code) {
     const api = makeApi()
     const data = await api.authorizationCodeGrant(code);
     store.setTokens(userId, data.body.access_token, data.body.refresh_token, data.body.expires_in)
 }
 
+/**
+ * Verifica se l'utente ha già completato l'autenticazione Spotify.
+ * 
+ * @param {string} userId - L'ID dell'utente Discord
+ * @returns {boolean} `true` se l'utente ha i token salvati, `false` altrimenti
+ */
 function isAuthenticated(userId) {
     const token = store.getTokens(userId)
     if (!token) return false
     return true
 }
 
+/**
+ * Cancella i token di accesso dell'utente, scollando l'account Spotify.
+ * 
+ * Dopo il logout, l'utente dovrà fare di nuovo /auth per riconnettere Spotify.
+ * 
+ * @param {string} userId - L'ID dell'utente Discord
+ * @returns {undefined}
+ */
 function logout(userId) {    
     return store.removeTokens(userId);
 }
 
+/**
+ * Cerca una canzone su Spotify e la avvia sul dispositivo attivo.
+ * 
+ * Ricerca il primo risultato per la query e lo riproduce.
+ * L'utente deve avere Spotify Premium e un dispositivo attivo.
+ * 
+ * @param {string} userId - L'ID dell'utente Discord
+ * @param {string} query - Il nome della canzone da cercare (es: 'Blinding Lights The Weeknd')
+ * @returns {Promise<Object>} Un oggetto con `success` e informazioni sulla canzone (name, artist, album, image, url, duration)
+ */
 async function play(userId, query) {
     // prendo api e cerco 
     const api = await apiForUser(userId)
@@ -91,6 +138,12 @@ async function play(userId, query) {
 
 }
 
+/**
+ * Mette in pausa la riproduzione Spotify dell'utente.
+ * 
+ * @param {string} userId - L'ID dell'utente Discord
+ * @returns {Promise<Object>} Un oggetto con `success: true` e messaggio di conferma
+ */
 async function pause(userId) {
     // api
     const api = await apiForUser(userId);
@@ -98,12 +151,27 @@ async function pause(userId) {
     return { success: true, message: 'In pause!' };
 }
 
+/**
+ * Riprende la riproduzione Spotify dell'utente.
+ * 
+ * @param {string} userId - L'ID dell'utente Discord
+ * @returns {Promise<Object>} Un oggetto con `success: true` e messaggio di conferma
+ */
 async function resume(userId) {
     const api = await apiForUser(userId);
     await api.play()
     return { success: true, message: 'Playing'}
 }
 
+/**
+ * Salta alla canzone successiva nella coda di riproduzione.
+ * 
+ * Attende 500ms per permettere a Spotify di aggiornare lo stato
+ * prima di ritornare le informazioni della nuova canzone.
+ * 
+ * @param {string} userId - L'ID dell'utente Discord
+ * @returns {Promise<Object>} Informazioni sulla nuova canzone in riproduzione
+ */
 async function skip(userId) {
     const api = await apiForUser(userId);
     await api.skipToNext();
@@ -112,6 +180,15 @@ async function skip(userId) {
     return nowPlaying(userId);
 }
 
+/**
+ * Torna alla canzone precedente nella coda di riproduzione.
+ * 
+ * Attende 500ms per permettere a Spotify di aggiornare lo stato
+ * prima di ritornare le informazioni della canzone precedente.
+ * 
+ * @param {string} userId - L'ID dell'utente Discord
+ * @returns {Promise<Object>} Informazioni sulla canzone precedente in riproduzione
+ */
 async function previous(userId) {
     const api = await apiForUser(userId);
     await api.skipToPrevious();
@@ -121,13 +198,25 @@ async function previous(userId) {
     return nowPlaying(userId);
 }
 
+/**
+ * Imposta il volume di Spotify.
+ * 
+ * @param {string} userId - L'ID dell'utente Discord
+ * @param {number} volume - Il livello di volume (0-100)
+ * @returns {Promise<Object>} Un oggetto con `success: true` e messaggio di conferma
+ */
 async function setVolume(userId, volume) {
     const api = await apiForUser(userId);
     await api.setVolume(volume);
     return { success: true, message: `Volume is now ${volume}%` };
 }
 
-
+/**
+ * Restituisce informazioni sulla canzone attualmente in riproduzione.
+ * 
+ * @param {string} userId - L'ID dell'utente Discord
+ * @returns {Promise<Object>} Un oggetto con `success`, `isPlaying`, e informazioni sulla canzone (name, artist, album, image, url, duration, progress)
+ */
 async function nowPlaying(userId) {
     const api = await apiForUser(userId);
     const data = await api.getMyCurrentPlayingTrack();
