@@ -30,8 +30,16 @@ const commandFiles = fs.readdirSync('./commands').filter(f => f.endsWith('.js'))
 
 // prendo i singoli comandi
 for (const file of commandFiles) {
-    const command = require(`./commands/${file}`)
-    client.commands.set(command.data.name, command);
+    const commandModule = require(`./commands/${file}`)
+    
+    // gestisci sia array di comandi che singoli comandi
+    const commands = Array.isArray(commandModule) ? commandModule : [commandModule];
+    
+    for (const command of commands) {
+        if (command && command.data && command.data.name) {
+            client.commands.set(command.data.name, command);
+        }
+    }
 }
 
 
@@ -82,8 +90,11 @@ async function registerCommands() {
   
   const commands = [];
   for (const file of commandFiles) {
-    const command = require(`./commands/${file}`);
-    commands.push(command.data.toJSON());
+    const commandModule = require(`./commands/${file}`);
+    const cmds = Array.isArray(commandModule) ? commandModule : [commandModule];
+    for (const cmd of cmds) {
+      if (cmd && cmd.data) commands.push(cmd.data.toJSON());
+    }
   }
 
   await rest.put(
