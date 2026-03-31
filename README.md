@@ -28,3 +28,6 @@ music-quiz-bot/
 
 # Deployment
 https://railway.com/
+
+# Scheme - CLAUDE generated
+![alt text](discord_spotify_bot_flow.svg)
