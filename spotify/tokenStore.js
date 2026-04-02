@@ -1,9 +1,14 @@
-// salva e legge i token Spotify di ogni utente in un file tokens.json
+/**
+ * Modulo Token Store - Gestisce la memorizzazione persistente dei token OAuth di Spotify
+ * Memorizza i token utente, token di accesso, token di refresh e tempi di scadenza in tokens.json
+ */
 
 const fs = require('fs');
 
 /**
- * leggo il file tokens.json, se non esiste restituisco
+ * Carica tutti i token memorizzati dal file tokens.json
+ * @returns {Object} Oggetto che mappa gli ID utente ai loro token memorizzati, o oggetto vuoto se il file non esiste
+ * @private
  */
 function load() {
   try {
@@ -14,15 +19,20 @@ function load() {
 }
 
 /**
- * scrivo nel file
+ * Salva l'oggetto dei token nel file tokens.json
+ * @param {Object} tokens - Oggetto con ID utente come chiavi e dati token come valori
+ * @private
  */
 function save(tokens) {
   fs.writeFileSync('./tokens.json', JSON.stringify(tokens, null, 2));
 }
 
-
 /**
- * salva i token di un utente
+ * Memorizza i token OAuth di Spotify per un utente
+ * @param {string} userId - ID utente Discord
+ * @param {string} accessToken - Token di accesso Spotify
+ * @param {string} refreshToken - Token di refresh Spotify
+ * @param {number} expiresIn - Tempo di scadenza del token in secondi
  */
 function setTokens(userId, accessToken, refreshToken, expiresIn) {
     const tokens = load()
@@ -31,7 +41,9 @@ function setTokens(userId, accessToken, refreshToken, expiresIn) {
 }
 
 /**
- * restituisce i token di un utente (o null se non esiste)
+ * Recupera i token memorizzati per un utente
+ * @param {string} userId - ID utente Discord
+ * @returns {Object|null} Oggetto token con accessToken, refreshToken e expiresAt, o null se non trovato
  */
 function getTokens(userId) {
     const tokens = load()
@@ -39,7 +51,10 @@ function getTokens(userId) {
 }
 
 /**
- * aggiorna solo l'accessToken dopo un refresh
+ * Aggiorna il token di accesso per un utente dopo l'aggiornamento del token
+ * @param {string} userId - ID utente Discord
+ * @param {string} newAccessToken - Nuovo token di accesso Spotify
+ * @param {number} expiresIn - Tempo di scadenza del token in secondi
  */
 function updateAccessToken(userId, newAccessToken, expiresIn) {
     const tokens = load()
@@ -51,14 +66,13 @@ function updateAccessToken(userId, newAccessToken, expiresIn) {
 }
 
 /**
- * cancella i token di un utente (logout)
+ * Rimuove i token memorizzati per un utente (logout)
+ * @param {string} userId - ID utente Discord
  */
 function removeTokens(userId) {
     const tokens = load()
     delete tokens[userId];
     save(tokens)
 }
-
-
 
 module.exports = { setTokens, getTokens, updateAccessToken, removeTokens };

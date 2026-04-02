@@ -1,31 +1,38 @@
+/**
+ * VinylBot - Bot Discord per il gioco di indovinelli di canzoni Spotify
+ * 
+ * Punto di ingresso principale che:
+ * - Carica le variabili d'ambiente e la configurazione di Discord/Spotify
+ * - Inizializza il client del bot Discord e carica i comandi slash
+ * - Configura il server Express per la gestione del callback OAuth di Spotify
+ * - Registra i comandi con Discord e gestisce le interazioni
+ */
+
 require('dotenv').config();
 const spotify = require('./spotify/client');
 
-// carico variabili env
+// Load environment variables
 const discord_token = process.env.DISCORD_TOKEN
 const discort_client = process.env.DISCORD_CLIENT_ID
 const spotify_client = process.env.SPOTIFY_CLIENT_ID
 const spotify_secret = process.env.SPOTIFY_CLIENT_SECRET
 const spotify_redirect = process.env.SPOTIFY_REDIRECT_URI
 
-// crezione client ds
+// Moduli Discord.js
+const { Client, GatewayIntentBits, Collection, REST, Routes } = require('discord.js')
 
-// cose da discord.js
-const { Client, GatewayIntentBits, Collection } = require('discord.js')
-
-// creo il client
+// Crea il client del bot Discord
 const client = new Client({
     intents: [GatewayIntentBits.Guilds]
 });
 
-// creo la collection di comandi
+// Inizializza la collezione di comandi
 client.commands = new Collection()
 
-
-// leggo i comandi
+// Modulo file system per caricare i comandi
 const fs = require('fs');
 
-// comandi (ignoro file che non sono .js)
+// Carica tutti i file di comandi dalla directory commands
 const commandFiles = fs.readdirSync('./commands').filter(f => f.endsWith('.js'))
 
 // prendo i singoli comandi
@@ -43,10 +50,15 @@ for (const file of commandFiles) {
 }
 
 
+// Evento bot pronto
 client.once('ready', () => {
   console.log(`Bot running on ${client.user.tag}`);
 });
 
+/**
+ * Gestisce le interazioni dei comandi slash
+ * @event interactionCreate
+ */
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -61,10 +73,19 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
-// server 
+// Server Express per il callback OAuth di Spotify
 const express = require('express');
 const app = express()
 
+/**
+ * Endpoint di callback OAuth di Spotify
+ * Riceve il codice di autorizzazione e l'ID utente dal redirect di Spotify
+ * Scambia il codice con i token di accesso/refresh
+ * @route GET /callback
+ * @param {string} code - Codice di autorizzazione Spotify
+ * @param {string} state - ID utente (inviato come parametro state per la sicurezza)
+ * @param {string} error - Messaggio di errore se l'utente ha negato l'autorizzazione
+ */
 app.get('/callback', async (req, res) => {
   const { code, state: userId, error } = req.query;
 
@@ -83,9 +104,13 @@ app.listen(process.env.PORT || 8888, () => {
   console.log(`Server listening on http://localhost:${process.env.PORT || 8888}`);
 });
 
-// gestione comandi
+/**
+ * Registra tutti i comandi slash con Discord
+ * Recupera le definizioni dei comandi da tutti i file e li registra globalmente
+ * @async
+ * @function registerCommands
+ */
 async function registerCommands() {
-  const { REST, Routes } = require('discord.js');
   const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
   
   const commands = [];
@@ -104,8 +129,6 @@ async function registerCommands() {
   console.log('Commands registered');
 }
 
-
-// chiamo la funzione
+// Registra i comandi ed effettua il login su Discord
 registerCommands();
 client.login(process.env.DISCORD_TOKEN);
-

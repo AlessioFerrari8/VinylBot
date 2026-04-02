@@ -1,9 +1,17 @@
+/**
+ * Modulo Comandi Spotify - Gestisce l'autenticazione e la riproduzione Spotify
+ * Comandi: auth, logout, play
+ */
+
 const { SlashCommandBuilder } = require('discord.js');
 const spotifyClient = require('../spotify/client');
-
-// lista comandi
 const commands = [
     {
+        /**
+         * Comando Auth
+         * Avvia il flusso di autenticazione OAuth2 di Spotify
+         * L'utente è reindirizzato alla pagina di login di Spotify
+         */
         data: new SlashCommandBuilder()
             .setName('auth')
             .setDescription('Links your Spotify account'),
@@ -29,6 +37,10 @@ const commands = [
     },
 
     {
+        /**
+         * Comando Logout
+         * Scollega l'account Spotify dell'utente dal bot
+         */
         data: new SlashCommandBuilder()
             .setName('logout')
             .setDescription('Unlinks your Spotify account'),
@@ -54,6 +66,10 @@ const commands = [
     },
 
     {
+        /**
+         * Comando Play
+         * Cerca una canzone su Spotify e la riproduce (se l'anteprima è disponibile)
+         */
         data: new SlashCommandBuilder()
             .setName('play')
             .setDescription('Search and play a song from Spotify')
