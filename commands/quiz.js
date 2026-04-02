@@ -5,6 +5,8 @@
 
 const { SlashCommandBuilder } = require('discord.js');
 const database = require('../db/database');
+const GameManager = require('../game/GameManager');
+
 
 // lista comandi
 const commands = [
@@ -24,16 +26,15 @@ const commands = [
             ),
         
         async execute(interaction) {
-            // utente
             const userId = interaction.user.id;
             const playlist = interaction.options.getString('playlist');
-            await interaction.deferReply();
 
             try {
                 await GameManager.startGame(interaction, playlist, userId);
             } catch (error) {
+                console.error(error);
                 if (error.message === 'NOT_AUTHENTICATED') {
-                    return interaction.editReply('Use `/auth` first!');
+                return interaction.editReply('Use `/auth` first!');
                 }
                 interaction.editReply('Error starting game.');
             }
