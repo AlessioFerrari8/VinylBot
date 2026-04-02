@@ -1,32 +1,45 @@
-
+// punteggi temporanei della partita in corso
+let scores = {};
 
 /**
- * Aggiunge un punto al punteggio di un utente nel database
- * @param {string} userId - ID utente Discord
+ * 
+ * @param {*} userId 
  */
 function addPoint(userId) {
-
+    // se valido
+    if (!scores[userId]) scores[userId] = 0;
+    // +1
+    scores[userId] += 1;
 }
 
 /**
- * Recupera l'oggetto dei punteggi corrente dal database
- * @returns {Object} Oggetto con gli ID utente come chiavi e i punteggi come valori
+ * 
+ * @returns 
  */
 function getScores() {
-
+    return scores;
 }
 
 /**
- * Recupera una classifica ordinata di tutti i giocatori e i loro punteggi
- * @returns {Array} Array di coppie [userId, score] ordinato per punteggio decrescente
+ * 
  */
-function getLeaderboard() {
-
+function getWinner() {
+    let winner = null;
+    let higher = 0;
+  
+    for (const [userId, score] of Object.entries(scores)) {
+        if (score > higher) {
+        higher = score;
+        winner = userId;
+        }
+    }
+  
+    return winner;
 }
 
-/**
- * Azzera tutti i punteggi a zero
- */
 function reset() {
-
+    scores = {};
 }
+
+
+module.exports = { addPoint, getScores, getWinner, reset }
