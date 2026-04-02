@@ -28,6 +28,7 @@ const commands = [
         async execute(interaction) {
             const userId = interaction.user.id;
             const playlist = interaction.options.getString('playlist');
+            await interaction.deferReply();
 
             try {
                 await GameManager.startGame(interaction, playlist, userId);

@@ -31,3 +31,6 @@ https://railway.com/
 
 # Scheme - CLAUDE generated
 ![alt text](discord_spotify_bot_flow.svg)
+
+
+https://open.spotify.com/playlist/7mQliCHTzzjXXMxa6bTUQT?si=9a423aef2a234f2f

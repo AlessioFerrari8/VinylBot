@@ -5,7 +5,10 @@
 
 const { SlashCommandBuilder } = require('discord.js');
 const spotifyClient = require('../spotify/client');
+const { MessageFlags } = require('discord.js');
+
 const commands = [
+    
     {
         /**
          * Comando Auth
@@ -25,12 +28,12 @@ const commands = [
                 // aspetto risposta e do ack
                 await interaction.reply({
                     content: `Click here to authenticate with Spotify:\n${authUrl}`,
-                    ephemeral: true // temporaneo
+                    flags: MessageFlags.Ephemeral
                 });
             } catch (error) {
                 await interaction.reply({
                     content: 'Error: Error during authentication',
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             }
         }
@@ -54,12 +57,12 @@ const commands = [
                 // aspetto e do ack
                 await interaction.reply({
                     content: 'Spotify account unlinked!',
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             } catch (error) {
                 await interaction.reply({
                     content: 'Error: Error during logout',
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             }
         }
@@ -108,7 +111,7 @@ const commands = [
                 if (error.message === 'NOT_AUTHENTICATED') {
                     return await interaction.reply({
                         content: 'Error: You are not authenticated! Use `/auth` to link your Spotify account',
-                        ephemeral: true
+                        flags: MessageFlags.Ephemeral
                     });
                 }
                 await interaction.editReply({
@@ -137,7 +140,7 @@ const commands = [
                 if (error.message === 'NOT_AUTHENTICATED') {
                     return await interaction.reply({
                         content: 'Error: You are not authenticated! Use `/auth` to link your Spotify account',
-                        ephemeral: true
+                        flags: MessageFlags.Ephemeral
                     });
                 }
                 await interaction.reply({
@@ -164,7 +167,7 @@ const commands = [
                 if (error.message === 'NOT_AUTHENTICATED') {
                     return await interaction.reply({
                         content: 'Error: You are not authenticated! Use `/auth` to link your Spotify account',
-                        ephemeral: true
+                        flags: MessageFlags.Ephemeral
                     });
                 }
                 await interaction.reply({
@@ -200,7 +203,7 @@ const commands = [
                 if (error.message === 'NOT_AUTHENTICATED') {
                     return await interaction.reply({
                         content: 'Error: You are not authenticated! Use `/auth` to link your Spotify account',
-                        ephemeral: true
+                        flags: MessageFlags.Ephemeral
                     });
                 }
                 await interaction.editReply({
@@ -236,7 +239,7 @@ const commands = [
                 if (error.message === 'NOT_AUTHENTICATED') {
                     return await interaction.reply({
                         content: 'Error: You are not authenticated! Use `/auth` to link your Spotify account',
-                        ephemeral: true
+                        flags: MessageFlags.Ephemeral
                     });
                 }
                 await interaction.editReply({
@@ -273,7 +276,7 @@ const commands = [
                 if (error.message === 'NOT_AUTHENTICATED') {
                     return await interaction.reply({
                         content: 'Error: You are not authenticated! Use `/auth` to link your Spotify account',
-                        ephemeral: true
+                        flags: MessageFlags.Ephemeral
                     });
                 }
                 await interaction.reply({
@@ -313,7 +316,7 @@ const commands = [
                 if (error.message === 'NOT_AUTHENTICATED') {
                     return await interaction.reply({
                         content: 'Error: You are not authenticated! Use `/auth` to link your Spotify account',
-                        ephemeral: true
+                        flags: MessageFlags.Ephemeral
                     });
                 }
                 await interaction.editReply({

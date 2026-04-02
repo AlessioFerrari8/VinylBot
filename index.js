@@ -10,10 +10,12 @@
 
 require('dotenv').config();
 const spotify = require('./spotify/client');
+const { MessageFlags } = require('discord.js');
+
 
 // Load environment variables
 const discord_token = process.env.DISCORD_TOKEN
-const discort_client = process.env.DISCORD_CLIENT_ID
+const discord_client = process.env.DISCORD_CLIENT_ID
 const spotify_client = process.env.SPOTIFY_CLIENT_ID
 const spotify_secret = process.env.SPOTIFY_CLIENT_SECRET
 const spotify_redirect = process.env.SPOTIFY_REDIRECT_URI
@@ -23,7 +25,13 @@ const { Client, GatewayIntentBits, Collection, REST, Routes } = require('discord
 
 // Crea il client del bot Discord
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildVoiceStates,  // per entrare in vocale
+    GatewayIntentBits.GuildMembers,  
+  ]
 });
 
 // Inizializza la collezione di comandi
@@ -51,8 +59,9 @@ for (const file of commandFiles) {
 
 
 // Evento bot pronto
-client.once('ready', () => {
+client.once('clientReady', async () => {
   console.log(`Bot running on ${client.user.tag}`);
+  await registerCommands();
 });
 
 /**
@@ -69,7 +78,7 @@ client.on('interactionCreate', async (interaction) => {
     await command.execute(interaction);
   } catch (err) {
     console.error(err);
-    await interaction.reply({ content: 'Error!', ephemeral: true });
+    await interaction.reply({ content: 'Error!', flags: MessageFlags.Ephemeral });
   }
 });
 
@@ -122,13 +131,14 @@ async function registerCommands() {
     }
   }
 
-  await rest.put(
-    Routes.applicationCommands(process.env.DISCORD_CLIENT_ID),
-    { body: commands }
-  );
+  // Registra globalmente se GUILD_ID non è impostato, altrimenti solo nel server specificato
+  const route = process.env.GUILD_ID 
+    ? Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, process.env.GUILD_ID)
+    : Routes.applicationCommands(process.env.DISCORD_CLIENT_ID);
+
+  await rest.put(route, { body: commands });
   console.log('Commands registered');
 }
 
-// Registra i comandi ed effettua il login su Discord
-registerCommands();
+// Effettua il login su Discord (registerCommands() viene chiamato nel clientReady event)
 client.login(process.env.DISCORD_TOKEN);
