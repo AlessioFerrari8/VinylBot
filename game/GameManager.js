@@ -21,10 +21,27 @@ let gameState = null;
  * @throws {Error} Se l'URL di anteprima non è disponibile per la canzone selezionata
  */
 async function startGame(interaction, source, userId) {
+    
+    // Recupera il guild, fetchandolo se non è in cache
+    let guild = interaction.guild;
+    if (!guild) {
+        try {
+            guild = await interaction.client.guilds.fetch(interaction.guildId);
+        } catch (err) {
+            console.error('Failed to fetch guild:', err);
+            return interaction.editReply('Error: Could not access server.');
+        }
+    }
 
-    // prendo canale vocale
-    const channel = interaction.member.voice.channel;
-    if (!channel) return interaction.reply('Devi essere in un canale vocale!');
+    // Recupera lo stato vocale dal voice states cache
+    const voiceState = guild.voiceStates.cache.get(userId);
+    const channel = voiceState?.channel;
+    
+    console.log('User ID:', userId);
+    console.log('Voice State:', voiceState);
+    console.log('Voice Channel:', channel);
+
+    if (!channel) return interaction.editReply('You must be in a voice channel!');
 
     // entro nel canale
     const connection = joinVoiceChannel({
@@ -34,8 +51,11 @@ async function startGame(interaction, source, userId) {
     });
 
     // prendo le canzoni dalla playlist spotify
+    console.log('Getting Spotify API for user:', userId);
     const api = await spotify.apiForUser(userId);
+    console.log('API ready, fetching playlist:', source);
     const data = await api.getPlaylistTracks(source);
+    console.log('Playlist tracks fetched successfully');
     const songs = data.body.items.map(item => item.track);
 
     // canzone da indovinare
@@ -44,7 +64,7 @@ async function startGame(interaction, source, userId) {
 
     // TODO: migliorare se non c'è
     // controllo se esiste la preview (NON È DETTO)
-    if (!toGuess.preview_url) return interaction.reply('The song isn\'t available, please try another one!');
+    if (!toGuess.preview_url) return interaction.editReply('The song isn\'t available, please try another one!');
     
     // streamma la preview
     const player = createAudioPlayer();
@@ -53,7 +73,7 @@ async function startGame(interaction, source, userId) {
     player.play(resource);
     connection.subscribe(player);
     
-    await interaction.reply(`Guess the song!`);
+    await interaction.editReply(`Guess the song!`);
     
     // salvo la partita
     gameState = {
@@ -96,7 +116,7 @@ async function nextRound(interaction) {
     // nuova random
     const toGuess = gameState.songs[Math.floor(Math.random() * gameState.songs.length)];
     // controllo ci sia la preview
-    if (!toGuess.preview_url) return interaction.reply('The song isn\'t available, please try another one!');
+    if (!toGuess.preview_url) return interaction.channel.send('The song isn\'t available, skipping...');
     // nuovo player e streammo la preview
     const player = createAudioPlayer();
     const resource = createAudioResource(toGuess.preview_url);
@@ -105,7 +125,7 @@ async function nextRound(interaction) {
     player.play(resource);
     gameState.connection.subscribe(player);
     
-    await interaction.reply(`Guess the song!`);
+    await interaction.channel.send('Guess the song!');
 
     // aggiorno le variabili
     gameState.toGuess = toGuess;

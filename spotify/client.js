@@ -8,6 +8,8 @@ const SCOPES = [
     'user-read-playback-state',
     'user-modify-playback-state',
     'user-read-currently-playing',
+    'playlist-read-private',
+    'playlist-read-collaborative'
 ]
 
 /**
@@ -43,10 +45,20 @@ async function apiForUser(userId) {
     api.setAccessToken(saved.accessToken);
     api.setRefreshToken(saved.refreshToken);
 
+    console.log('Token expiry check - expiresAt:', new Date(saved.expiresAt), 'now:', new Date(Date.now()));
     if (Date.now() > saved.expiresAt - 60_000) {
-        const data = await api.refreshAccessToken();
-        api.setAccessToken(data.body.access_token);
-        store.updateAccessToken(userId, data.body.access_token, data.body.expires_in);
+        console.log('Token expired or expiring soon, refreshing...');
+        try {
+            const data = await api.refreshAccessToken();
+            console.log('Token refreshed successfully');
+            api.setAccessToken(data.body.access_token);
+            store.updateAccessToken(userId, data.body.access_token, data.body.expires_in);
+        } catch (err) {
+            console.error('Token refresh failed:', err.message);
+            throw err;
+        }
+    } else {
+        console.log('Token still valid');
     }
 
     return api;
@@ -236,4 +248,4 @@ async function nowPlaying(userId) {
 }
 
 
-module.exports = { getAuthUrl, handleCallback, isAuthenticated, logout, play, pause, resume, skip, previous, setVolume, nowPlaying };
+module.exports = { getAuthUrl, handleCallback, isAuthenticated, logout, play, pause, resume, skip, previous, setVolume, nowPlaying, apiForUser };
