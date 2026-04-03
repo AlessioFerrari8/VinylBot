@@ -13,21 +13,21 @@ const commands = [
     {
         /**
          * Comando Quiz Start
-         * Avvia una nuova partita di indovinelli con una playlist Spotify specificata
+         * Avvia una nuova partita di indovinelli con un artista preso da yt
          */
         data: new SlashCommandBuilder()
             .setName('quiz_start')
-            .setDescription('Starts a game with a playlist')
+            .setDescription('Starts a game with an artist or a genre')
             .addStringOption(option =>
                 option
-                    .setName('playlist')
-                    .setDescription('Name of the playlist')
+                    .setName('artist')
+                    .setDescription('Artist o musical genre')
                     .setRequired(true)
             ),
         
         async execute(interaction) {
             const userId = interaction.user.id;
-            const playlist = interaction.options.getString('playlist');
+            const playlist = interaction.options.getString('artist')
             await interaction.deferReply();
 
             try {
