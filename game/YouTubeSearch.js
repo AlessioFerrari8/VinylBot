@@ -6,7 +6,7 @@ async function searchSong(query) {
     // faccio una ricerca su yt
     const result = await search(query);
     // prendo il primo risultato
-    const firstVideo = result[0];    
+    const firstVideo = result.videos[0];    
 
     if (!firstVideo) return null; 
     // prendo l'url

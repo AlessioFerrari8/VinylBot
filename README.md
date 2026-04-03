@@ -33,4 +33,5 @@ https://railway.com/
 ![alt text](discord_spotify_bot_flow.svg)
 
 
-https://open.spotify.com/playlist/7mQliCHTzzjXXMxa6bTUQT?si=9a423aef2a234f2f
+https://open.spotify.com/playlist/7mQliCHTzzjXXMxa6bTUQT?si=7b226f9c45344e5d
+https://open.spotify.com/playlist/37i9dQZEVXbMDoHDwVN2tF?si=eb924696878d4115
