@@ -4,9 +4,9 @@
  */
 
 const { joinVoiceChannel, getVoiceConnections, AudioPlayer } = require('@discordjs/voice');
-const spotify = require('../spotify/client');
 const { createAudioPlayer, createAudioResource, AudioPlayerStatus } = require('@discordjs/voice');
 const database = require('../db/database');
+const YouTube = require('./YouTubeSearch');
 
 /** @type {Object|null} Stato attuale del gioco incluso connessione, player, canzoni e punteggi */
 let gameState = null;
@@ -16,74 +16,54 @@ let gameState = null;
  * Si connette al canale vocale, recupera i brani dalla playlist e inizia a riprodurre un'anteprima casuale
  * @async
  * @param {Object} interaction - Oggetto interaction di Discord
- * @param {string} source - ID o URI della playlist Spotify
+ * @param {string} source - artista o genere (es. The Beatles)
  * @param {string} userId - ID utente Discord che ha avviato la partita
  * @throws {Error} Se l'URL di anteprima non è disponibile per la canzone selezionata
  */
-async function startGame(interaction, source, userId) {
-    
-    // Recupera il guild, fetchandolo se non è in cache
+async function startGame(interaction, query, userId) {
+    // canale
     let guild = interaction.guild;
-    if (!guild) {
-        try {
-            guild = await interaction.client.guilds.fetch(interaction.guildId);
-        } catch (err) {
-            console.error('Failed to fetch guild:', err);
-            return interaction.editReply('Error: Could not access server.');
-        }
-    }
-
-    // Recupera lo stato vocale dal voice states cache
+    if (!guild) guild = await interaction.client.guilds.fetch(interaction.guildId);
     const voiceState = guild.voiceStates.cache.get(userId);
     const channel = voiceState?.channel;
-    
-    console.log('User ID:', userId);
-    console.log('Voice State:', voiceState);
-    console.log('Voice Channel:', channel);
-
+    // se non è in un canale
     if (!channel) return interaction.editReply('You must be in a voice channel!');
-
-    // entro nel canale
+    // connessione
     const connection = joinVoiceChannel({
         channelId: channel.id,
         guildId: channel.guild.id,
         adapterCreator: channel.guild.voiceAdapterCreator,
     });
 
-    // prendo le canzoni dalla playlist spotify
-    console.log('Getting Spotify API for user:', userId);
-    const api = await spotify.apiForUser(userId);
-    console.log('API ready, fetching playlist:', source);
-    const data = await api.getPlaylistTracks(source);
-    console.log('Playlist tracks fetched successfully');
-    const songs = data.body.items.map(item => item.track);
+    // cerco
+    const song = await YouTube.searchSong(query)
+    if (!song) return interaction.editReply('No results found!');
 
-    // canzone da indovinare
-    const toGuess = songs[Math.floor(Math.random() * songs.length)];
+    // creo lo stream audio
+    const stream = YouTube.createAudioStream(song.url)
 
+    // streammo la canzone
+    const player = createAudioPlayer()
+    const resource = createAudioResource(stream)
 
-    // TODO: migliorare se non c'è
-    // controllo se esiste la preview (NON È DETTO)
-    if (!toGuess.preview_url) return interaction.editReply('The song isn\'t available, please try another one!');
-    
-    // streamma la preview
-    const player = createAudioPlayer();
-    const resource = createAudioResource(toGuess.preview_url);
-    
-    player.play(resource);
-    connection.subscribe(player);
-    
+    player.play(resource)
+    connection.subscribe(player)
+
     await interaction.editReply(`Guess the song!`);
-    
-    // salvo la partita
+
     gameState = {
         connection,
         player,
-        toGuess,
-        songs,
+        currentSong: {
+            title: song.title,
+            artist: song.author.name,
+            url: song.url,
+        },
+        query,
         scores: {},
     };
 }
+
 
 /**
  * Ferma la partita corrente, interrompe la riproduzione audio e rimuove il bot dal canale vocale
@@ -113,24 +93,30 @@ async function nextRound(interaction) {
     // fermo il player
     gameState.player.stop()
 
-    // nuova random
-    const toGuess = gameState.songs[Math.floor(Math.random() * gameState.songs.length)];
-    // controllo ci sia la preview
-    if (!toGuess.preview_url) return interaction.channel.send('The song isn\'t available, skipping...');
-    // nuovo player e streammo la preview
-    const player = createAudioPlayer();
-    const resource = createAudioResource(toGuess.preview_url);
-    
-    // stesso procedimento come in startGame()
-    player.play(resource);
-    gameState.connection.subscribe(player);
-    
+    // cerco
+    const song = await YouTube.searchSong(gameState.query);
+    if (!song) return interaction.editReply('No results found!');
+
+    // creo lo stream audio
+    const stream = YouTube.createAudioStream(song.url)
+
+    // streammo la canzone
+    const player = createAudioPlayer()
+    const resource = createAudioResource(stream)
+
+    player.play(resource)
+    gameState.connection.subscribe(player)
+
     await interaction.channel.send('Guess the song!');
 
     // aggiorno le variabili
-    gameState.toGuess = toGuess;
+    gameState.currentSong = {
+        title: song.title,
+        artist: song.author.name,
+        url: song.url,
+    };
     gameState.player = player;
-    
+
 }
 
 
@@ -146,8 +132,8 @@ function checkGuess(userId, guess) {
     if (!gameState) return;
 
     // prendo il nome della canzone da indovinare
-    const toGuess = gameState.toGuess.name
-    
+    const toGuess = gameState.currentSong.title
+
     // confronto
     if (guess.toLowerCase() === toGuess.toLowerCase()) { // TODO: maiuscole e minuscole
         database.addPoint(userId)
@@ -162,7 +148,7 @@ function checkGuess(userId, guess) {
  * @returns {string|null} Il nome della canzone corrente o null se nessuna partita è attiva
  */
 function getToGuess() {
-    return gameState ? gameState.toGuess.name : null;
+    return gameState ? gameState.currentSong.title : null;
 }
 
 
