@@ -6,6 +6,9 @@ node_modules/
  
 # Token Spotify salvati degli utenti (dati sensibili!)
 tokens.json
+
+# Token Spotify salvati degli utenti (dati sensibili!)
+scores.json
  
 # Log
 logs/
@@ -19,3 +22,4 @@ Thumbs.db
 AURA.md
 AURA2.md
 AURA3.md
+AURA4.md
