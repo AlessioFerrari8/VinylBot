@@ -8,7 +8,7 @@ const { createAudioPlayer, createAudioResource, AudioPlayerStatus } = require('@
 const database = require('../db/database');
 const YouTube = require('./YouTubeSearch');
 const RoundHandler = require('./RoundHandler');
-
+const spotify = require('../spotify/client')
 
 
 /** @type {Object|null} Stato attuale del gioco incluso connessione, player, canzoni e punteggi */
@@ -23,16 +23,20 @@ let gameState = null;
  * @param {string} userId - ID utente Discord che ha avviato la partita
  * @throws {Error} Se l'URL di anteprima non è disponibile per la canzone selezionata
  */
-async function startGame(interaction, query, userId) {
-    // canale
+async function startGame(interaction, artistName, userId) {
+    // connessione a canale vocale
     const guild = interaction.guild || interaction.client.guilds.cache.get(interaction.guildId)
 
+    // errori vari
     if (!guild) return interaction.editReply('Error: Could not access server.');
-    
+
     const voiceState = guild.voiceStates.cache.get(userId);
     const channel = voiceState?.channel;
+
+    // errori vari
     if (!channel) return interaction.editReply('You must be in a voice channel!');
 
+    // connessione effettiva
     const connection = joinVoiceChannel({
         channelId: channel.id,
         guildId: guild.id,
@@ -59,9 +63,20 @@ async function startGame(interaction, query, userId) {
         return interaction.editReply('Could not connect to voice channel! Check bot permissions.');
     }
 
+    // ottengo l'artista 
+    const artist = await spotify.searchArtist(userId, artistName)
+    if (!artist) return interaction.editReply('Artist not found')
+	
+    // ottengo le tracks
+    const tracks = await spotify.getArtistTopTracks(userId, artist.id)
+    if (!tracks) return interaction.editReply('Error: didn\'t find any track for the artist')
+
+    // scelgo una track random
+    const track = tracks[Math.floor(Math.random() * tracks.length)];
+
     // cerco
-    console.log('query:', query);
-    const song = await YouTube.searchSong(query)
+    console.log('Artist:', artistName);
+    const song = await YouTube.searchSong(`${track.name} ${track.artists[0].name}`);
     if (!song || !song.url) return interaction.editReply('No results found!');
 
     // creo lo stream audio
@@ -69,6 +84,7 @@ async function startGame(interaction, query, userId) {
 
     // streammo la canzone
     const player = createAudioPlayer()
+
     player.on('error', err => console.error('[Player Error]', err));
     player.on('stateChange', (old, newState) => {
         console.log(`[Player State] ${old.status} -> ${newState.status}`);
@@ -79,7 +95,7 @@ async function startGame(interaction, query, userId) {
     // creo risorsa audio con tipo corretto dallo stream
     console.log('Creating audio resource with type:', audioStream.type.toString());
     const resource = createAudioResource(audioStream.stream, {
-        inputType: StreamType.OggOpus,  
+        inputType: StreamType.OggOpus,
     });
     console.log('Resource created, playing...');
 
@@ -93,11 +109,12 @@ async function startGame(interaction, query, userId) {
         connection,
         player,
         currentSong: {
-            title: song.title,  
-            artist: song.channel?.name,
-            url: song.url,
+            title: track.name,
+            artist: track.artists[0].name,
+            youtubeUrl: song.url,
         },
-        query,
+        tracks,
+        userId,
         scores: {},
     };
 
@@ -132,14 +149,19 @@ async function nextRound(interaction) {
     if (!gameState) return;
     gameState.player.stop();
 
-    const song = await YouTube.searchSong(gameState.query);
+    // prendo nuova random
+    const track = gameState.tracks[Math.floor(Math.random() * gameState.tracks.length)];
+
+    // cerco la canzone
+    const song = await YouTube.searchSong(`${track.name} ${track.artists[0].name}`);
     if (!song) return interaction.channel.send('No results found!');
 
+    // creo stream e avvio riproduione
     console.log('Song URL:', song.url);
-    const audioStream = await YouTube.createAudioStream(song.url);  
+    const audioStream = await YouTube.createAudioStream(song.url);
     const player = createAudioPlayer();
-    const resource = createAudioResource(audioStream.stream, {      
-        inputType: audioStream.type,                                 
+    const resource = createAudioResource(audioStream.stream, {
+        inputType: audioStream.type,
     });
 
     player.play(resource);
@@ -148,10 +170,11 @@ async function nextRound(interaction) {
     await interaction.channel.send('Guess the song!');
 
     gameState.currentSong = {
-        title: song.title,        
-        artist: song.channel?.name,
-        url: song.url,
+        title: track.name,           
+        artist: track.artists[0].name, 
+        youtubeUrl: song.url,
     };
+
     gameState.player = player;
 }
 
