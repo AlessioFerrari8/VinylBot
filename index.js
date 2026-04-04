@@ -64,6 +64,12 @@ client.once('clientReady', async () => {
   await registerCommands();
 });
 
+client.on('raw', (packet) => {
+  if (packet.t === 'VOICE_SERVER_UPDATE' || packet.t === 'VOICE_STATE_UPDATE') {
+    console.log('Voice packet:', packet.t, packet.d);
+  }
+});
+
 /**
  * Gestisce le interazioni dei comandi slash
  * @event interactionCreate
