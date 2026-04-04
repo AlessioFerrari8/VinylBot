@@ -27,8 +27,13 @@ const commands = [
         
         async execute(interaction) {
             const userId = interaction.user.id;
-            const playlist = interaction.options.getString('artist')
+            // metto pure playlist nel dubbio (magari è rimasto in cache playlist e non prende artist)
+            const playlist = interaction.options.getString('playlist') || interaction.options.getString('artist');
+            
             await interaction.deferReply();
+            console.log('Artist option:', playlist)
+            console.log('All options:', interaction.options.data);
+            console.log('Artist option:', interaction.options.getString('artist'));
 
             try {
                 await GameManager.startGame(interaction, playlist, userId);
@@ -57,12 +62,13 @@ const commands = [
             await interaction.deferReply();
 
             try {
-                await GameManager.stopGame();
+                GameManager.stopGame();
+                await interaction.editReply('Game stopped!');
             } catch (error) {
                 if (error.message === 'NOT_AUTHENTICATED') {
                     return interaction.editReply('Use `/auth` first!');
                 }
-                interaction.editReply('Error starting game.');
+                interaction.editReply('Error stopping game.');
             }
         }
     },
