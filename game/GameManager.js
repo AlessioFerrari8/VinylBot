@@ -3,7 +3,7 @@
  * Caratteristiche: connessione al canale vocale, stream audio, gestione round, tracciamento punteggi
  */
 
-const { joinVoiceChannel, getVoiceConnections, AudioPlayer } = require('@discordjs/voice');
+const { joinVoiceChannel, getVoiceConnections, AudioPlayer, StreamType, entersState, VoiceConnectionStatus } = require('@discordjs/voice');
 const { createAudioPlayer, createAudioResource, AudioPlayerStatus } = require('@discordjs/voice');
 const database = require('../db/database');
 const YouTube = require('./YouTubeSearch');
@@ -33,18 +33,42 @@ async function startGame(interaction, query, userId) {
         channelId: channel.id,
         guildId: channel.guild.id,
         adapterCreator: channel.guild.voiceAdapterCreator,
+        selfDeaf: false,
+        selfMute: false,
+        debug: true,  
+    });
+    console.log('Connection state:', connection.state.status);
+    connection.on('debug', msg => console.log('[Voice Debug]', msg));
+    connection.on('stateChange', (old, newState) => {
+        console.log(`Connection: ${old.status} -> ${newState.status}`);
     });
 
+
+    // devo aspettare che la connessione sia pronta, altrimenti rimane
+    // segnaling e non diventa mai ready
+    await entersState(connection, VoiceConnectionStatus.Ready, 30_000);
+    console.log('Connection ready!');
+
+
+
     // cerco
+    console.log('query:', query);
     const song = await YouTube.searchSong(query)
-    if (!song) return interaction.editReply('No results found!');
+    if (!song || !song.url) return interaction.editReply('No results found!');
 
     // creo lo stream audio
     const stream = YouTube.createAudioStream(song.url)
 
     // streammo la canzone
     const player = createAudioPlayer()
-    const resource = createAudioResource(stream)
+    player.on('error', err => console.error('Player error:', err));
+    player.on(AudioPlayerStatus.Playing, () => console.log('Audio is playing!'));
+
+    // creo risorsa audio aggiungendo il tipo per forzare formato
+    const resource = createAudioResource(stream, {
+        inputType: StreamType.Raw,   
+    });
+
 
     player.play(resource)
     connection.subscribe(player)
@@ -55,7 +79,7 @@ async function startGame(interaction, query, userId) {
         connection,
         player,
         currentSong: {
-            title: song.title,
+            title: song.name,
             artist: song.author.name,
             url: song.url,
         },
@@ -111,7 +135,7 @@ async function nextRound(interaction) {
 
     // aggiorno le variabili
     gameState.currentSong = {
-        title: song.title,
+        title: song.name,
         artist: song.author.name,
         url: song.url,
     };
@@ -151,5 +175,13 @@ function getToGuess() {
     return gameState ? gameState.currentSong.title : null;
 }
 
+/**
+ * Recupera l'oggetto canzone attuale
+ * @returns 
+ */
+function getCurrentSong() {
+    return gameState ? gameState.currentSong : null;
+}
 
-module.exports = { startGame, stopGame, nextRound, checkGuess, getToGuess }
+
+module.exports = { startGame, stopGame, nextRound, checkGuess, getToGuess, getCurrentSong }

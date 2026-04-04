@@ -1,18 +1,31 @@
 const { execSync, spawn } = require('child_process');
-const search = require('yt-search');
+const ytsr = require('@distube/ytsr');
+const ffmpegPath = require('ffmpeg-static');
+
 
 
 async function searchSong(query) {
-    // faccio una ricerca su yt
-    const result = await search(query);
-    // prendo il primo risultato
-    const firstVideo = result.videos[0];    
+    try {
+        // faccio una ricerca su yt
+        console.log('Searching for:', query);
+        
+        const result = await ytsr(query, { limit: 1 });
+        console.log('Search result:', result);
 
-    if (!firstVideo) return null; 
-    // prendo l'url
-    const url = firstVideo.url;  
+        // prendo il primo risultato
+        const firstVideo = result.items[0];    
 
-    return createAudioStream(url);
+        if (!firstVideo) {
+            console.log('No videos found in result');
+            return null; 
+        }
+
+        console.log('Found video:', firstVideo.name);
+        return firstVideo;
+    } catch (error) {
+        console.error('YouTube search error:', error);
+        return null;
+    }
 }
 
 function createAudioStream(youtubeUrl) {
@@ -24,21 +37,26 @@ function createAudioStream(youtubeUrl) {
         youtubeUrl
     ]);
 
-    // prendo solo quello che mi serve con ffmpeg
-    const ffmpeg = spawn('ffmpeg', [
-        '-i', 'pipe:0',     // stdin
-        '-t', '20',         // 20 secondi
-        '-f', 'opus',       // audio per Discord
-        '-ar', '48000',     // sample rate Discord
-        '-ac', '2',         // stereo
-        'pipe:1'            // stdout
+    // uso ffmpeg preso da npm perché sul mio sistema non va (solite dipendenze :()
+    const ffmpeg = spawn(ffmpegPath, [
+        '-i', 'pipe:0',
+        '-t', '20',
+        '-f', 's16le', // format for reproducing yt videos
+        '-ar', '48000',
+        '-ac', '2',
+        'pipe:1'
     ]);
+
 
     // eventuali errori
     ytdlp.on('error', (err) => console.error('yt-dlp error:', err));
     ffmpeg.on('error', (err) => console.error('ffmpeg error:', err));
 
     ytdlp.stdout.pipe(ffmpeg.stdin);
+    // gestioen altri errori
+    ffmpeg.stdin.on('error', () => {}); 
+    ytdlp.stderr.on('data', () => {});  
+
     return ffmpeg.stdout;
 }
 

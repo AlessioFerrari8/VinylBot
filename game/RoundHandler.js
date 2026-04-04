@@ -1,4 +1,3 @@
-const gameManager = require('../game/GameManager')
 
 /** @type {*} Memorizza il collector di messaggi corrente per questo round */
 let currentCollector = null;
@@ -8,13 +7,13 @@ let currentCollector = null;
  * @param {Object} interaction - Oggetto interaction di Discord
  * @param {Object} gameManager - Istanza di GameManager per controllare le risposte e gestire il prossimo round
  */
-function startRound(interaction, gameManager) {
+async function startRound(interaction, gameManager) {
 
     // aspetto che qualcuno scriva in chat per 30 sec
     const collector = interaction.channel.createMessageCollector({ time: 30000 })
 
     // messaggi ricevuti
-    collector.on('collect', message => {
+    collector.on('collect', async message => {
         // id utente e la sua guess
         const userId = message.author.id
         const guess = message.content
@@ -26,17 +25,18 @@ function startRound(interaction, gameManager) {
         if (correct) {
             // fermo il collector e mando ack
             collector.stop('correct');
-            interaction.channel.send(`The player <@${userId}> guessed the song! The song was ${gameManager.getToGuess()}`);
+            interaction.channel.send(`The song was guessed bt ${userId} **${gameManager.getCurrentSong().title}** 
+            by *${gameManager.getCurrentSong().artist}*`);
             // vado al prossimo round
-            gameManager.nextRound(interaction); 
+            await gameManager.nextRound(interaction); 
         }
     });
 
-    collector.on('end', (collected, reason) => {
+    collector.on('end', async (collected, reason) => {
         if (reason != 'correct') {
             // vuol dire che è scaduto il tempo
             interaction.channel.send(`Time ended! The song was **${gameManager.getToGuess()}**`);
-            gameManager.nextRound(interaction);
+            await gameManager.nextRound(interaction);
 
         }
     })
