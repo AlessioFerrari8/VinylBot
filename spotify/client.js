@@ -18,6 +18,8 @@ const SCOPES = [
  * @returns {SpotifyWebApi} Un'istanza SpotifyWebApi non autenticata, con le credenziali dell'app caricate da .env
  */
 function makeApi() {
+    console.log('Spotify Client ID:', process.env.SPOTIFY_CLIENT_ID?.slice(0, 8));
+    console.log('Spotify Secret:', process.env.SPOTIFY_CLIENT_SECRET?.slice(0, 4));
     return new SpotifyWebApi({
         clientId:     process.env.SPOTIFY_CLIENT_ID,
         clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
@@ -247,5 +249,52 @@ async function nowPlaying(userId) {
     }}; 
 }
 
+/**
+ * 
+ * @param {*} userId 
+ * @param {*} artistName 
+ * @returns 
+ */
+async function searchArtist(userId, artistName) {
+    const api = makeApi();
+    try { // try catch per errori e trovare dove si trova un bug
+        // non serve /auth
+        const auth = await api.clientCredentialsGrant();
+        api.setAccessToken(auth.body.access_token);
+        // cerco
+        const result = await api.searchArtists(artistName, { limit: 1 });
+    
+        // ritorno 
+        const artists = result.body.artists.items;
+        if (!artists.length) return null;
+        return artists[0];
+    } catch (err) {
+        console.error('Full error:', err.statusCode, err.message, JSON.stringify(err.body));
+        return null;
+    }
+}
 
-module.exports = { getAuthUrl, handleCallback, isAuthenticated, logout, play, pause, resume, skip, previous, setVolume, nowPlaying, apiForUser };
+
+/**
+ * 
+ * @param {*} userId 
+ * @param {*} artistId 
+ */
+async function getArtistTopTracks(userId, artistId) {
+    console.log('Getting top tracks for artistId:', artistId);
+    const api = makeApi();
+
+    try {
+        // Usa client credentials (accesso pubblico, come searchArtist)
+        const auth = await api.clientCredentialsGrant();
+        api.setAccessToken(auth.body.access_token);
+        
+        const result = await api.getArtistTopTracks(artistId, 'IT');
+        return result.body.tracks;
+    } catch(err) {
+        console.error('TopTracks error:', err.statusCode, JSON.stringify(err.body));
+        return null;
+    }
+}
+
+module.exports = { getAuthUrl, handleCallback, isAuthenticated, logout, play, pause, resume, skip, previous, setVolume, nowPlaying, apiForUser, getArtistTopTracks, searchArtist };
