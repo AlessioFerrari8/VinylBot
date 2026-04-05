@@ -9,7 +9,8 @@ const SCOPES = [
     'user-modify-playback-state',
     'user-read-currently-playing',
     'playlist-read-private',
-    'playlist-read-collaborative'
+    'playlist-read-collaborative',
+    'user-top-read'
 ]
 
 /**
@@ -278,23 +279,17 @@ async function searchArtist(userId, artistName) {
 /**
  * 
  * @param {*} userId 
- * @param {*} artistId 
+ * @param {*} artistName 
+ * @returns 
  */
-async function getArtistTopTracks(userId, artistId) {
-    console.log('Getting top tracks for artistId:', artistId);
+async function getArtistTopTracks(userId, artistName) {
     const api = makeApi();
+    const auth = await api.clientCredentialsGrant();
+    api.setAccessToken(auth.body.access_token);
+    
+    const result = await api.searchTracks(`artist:${artistName}`);
 
-    try {
-        // Usa client credentials (accesso pubblico, come searchArtist)
-        const auth = await api.clientCredentialsGrant();
-        api.setAccessToken(auth.body.access_token);
-        
-        const result = await api.getArtistTopTracks(artistId, 'IT');
-        return result.body.tracks;
-    } catch(err) {
-        console.error('TopTracks error:', err.statusCode, JSON.stringify(err.body));
-        return null;
-    }
+    return result.body.tracks.items;
 }
 
 module.exports = { getAuthUrl, handleCallback, isAuthenticated, logout, play, pause, resume, skip, previous, setVolume, nowPlaying, apiForUser, getArtistTopTracks, searchArtist };

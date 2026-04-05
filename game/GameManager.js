@@ -68,7 +68,7 @@ async function startGame(interaction, artistName, userId) {
     if (!artist) return interaction.editReply('Artist not found')
 	
     // ottengo le tracks
-    const tracks = await spotify.getArtistTopTracks(userId, artist.id)
+    const tracks = await spotify.getArtistTopTracks(userId, artistName)
     if (!tracks) return interaction.editReply('Error: didn\'t find any track for the artist')
 
     // scelgo una track random
@@ -193,10 +193,15 @@ function checkGuess(userId, guess) {
     // prendo il nome della canzone da indovinare
     const toGuess = gameState.currentSong.title
 
+    // pulisco un po
+    const clean = str => str.toLowerCase()
+        .replace(/[^a-z0-9]/g, '') // rimuovo punteggiatura
+        .trim(); // eventuali whitespace
+
     // confronto
-    if (guess.toLowerCase() === toGuess.toLowerCase()) { // TODO: maiuscole e minuscole
-        database.addPoint(userId)
-        return true
+    if (clean(guess) === clean(toGuess) || (clean(toGuess).includes(clean(guess)) && clean(guess).length > 2)) {
+        database.addPoint(userId);
+        return true;
     } else {
         return false
     }
