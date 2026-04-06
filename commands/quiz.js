@@ -108,9 +108,12 @@ const commands = [
             
             // formattazione carina fatta 
             const text = leaderboard
-                .map(([userId, points], i) => `${i + 1}. <@${userId}> — ${points} points`)
-                .join('\n');
-            
+            .map(([userId, points], i) => {
+                const badge = database.getBadge(points);
+                return `${i + 1}. <@${userId}> — ${points} points ${badge.emoji} **${badge.name}**`;
+            })
+            .join('\n');
+
             interaction.reply(`🏆 **Leaderboard**\n${text}`);
         }
 

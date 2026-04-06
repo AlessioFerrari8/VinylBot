@@ -69,5 +69,19 @@ function resetScores() {
     save({})
 }
 
+/**
+ * Get's the badge based on the points
+ * @param {*} points // points of user
+ * @returns // Object with emoji, name and tier
+ */
+function getBadge(points) {
+    if (points < 5) return { emoji: '🌑', name: 'Novice', tier: 1 };
+    if (points < 10) return { emoji: '💿', name: 'Scout', tier: 2 };
+    if (points < 20) return { emoji: '📀', name: 'Guitarist', tier: 3 };
+    if (points < 50) return { emoji: '🔥', name: 'Maestro', tier: 4 };
+    if (points < 100) return { emoji: '💎', name: 'Legend', tier: 5 };
+    return { emoji: '🏆', name: 'Immortal', tier: 6};
+}
 
-module.exports = { addPoint, getScore, getLeaderboard, resetScores }
+
+module.exports = { addPoint, getScore, getLeaderboard, resetScores, getBadge }
