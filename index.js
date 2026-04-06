@@ -112,37 +112,64 @@ app.get('/callback', async (req, res) => {
     res.send(`
     <html>
       <head>
+        <title>Success!</title>
         <style>
           body { 
             margin: 0; 
-            padding: 0; 
             height: 100vh; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            background: linear-gradient(135deg, #1DB954, #191414); 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial;
+            background-color: #f8f9fa; 
+            font-family: -apple-system, system-ui, sans-serif;
           }
-          .container {
+          .card {
             text-align: center;
-            background: white;
+            background: #ffffff;
             padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            max-width: 350px;
+            width: 90%;
           }
-          h1 { color: #1DB954; margin: 0 0 20px 0; }
-          p { color: #666; font-size: 16px; }
+          .checkmark {
+            color: #1DB954;
+            font-size: 60px;
+            line-height: 1;
+            margin-bottom: 20px;
+          }
+          h1 { 
+            color: #191414; 
+            font-size: 22px;
+            margin: 0 0 10px 0; 
+            font-weight: 700;
+          }
+          p { 
+            color: #666; 
+            font-size: 15px;
+            margin: 0;
+            line-height: 1.4;
+          }
+          .timer {
+            margin-top: 25px;
+            color: #b3b3b3;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
         </style>
       </head>
       <body>
-        <div class="container">
-          <h1>Spotify Linked!</h1>
-          <p>You can close this page</p>
-          <p style="font-size: 12px; color: #999;">Return to Discord to start playing and enjoy the bot</p>
+        <div class="card">
+          <div class="checkmark">✓</div>
+          <h1>Connected!</h1>
+          <p>Your Spotify account is now linked.<br>You can safely close this window.</p>
+          <div class="timer">Closing automatically...</div>
         </div>
+        <script>setTimeout(() => window.close(), 4000);</script>
       </body>
     </html>
-  `);
+    `);
   } catch (err) {
     res.send('<h2>Error while authenticating. Retry /auth.</h2>');
   }
