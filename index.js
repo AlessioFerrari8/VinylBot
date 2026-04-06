@@ -109,7 +109,40 @@ app.get('/callback', async (req, res) => {
 
   try {
     await spotify.handleCallback(userId, code);
-    res.send(`<h1 style="color:#1DB954">Spotify linked succesfully! You can close this page.</h1>`);
+    res.send(`
+    <html>
+      <head>
+        <style>
+          body { 
+            margin: 0; 
+            padding: 0; 
+            height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            background: linear-gradient(135deg, #1DB954, #191414); 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial;
+          }
+          .container {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+          }
+          h1 { color: #1DB954; margin: 0 0 20px 0; }
+          p { color: #666; font-size: 16px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>Spotify Linked!</h1>
+          <p>You can close this page</p>
+          <p style="font-size: 12px; color: #999;">Return to Discord to start playing and enjoy the bot</p>
+        </div>
+      </body>
+    </html>
+  `);
   } catch (err) {
     res.send('<h2>Error while authenticating. Retry /auth.</h2>');
   }
