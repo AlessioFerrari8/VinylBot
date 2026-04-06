@@ -116,6 +116,7 @@ async function startGame(interaction, artistName, userId) {
         tracks,
         userId,
         scores: {},
+        playedTracks: []
     };
 
     // inizio il round
@@ -147,11 +148,25 @@ function stopGame() {
  */
 async function nextRound(interaction) {
     if (!gameState) return;
+    // fermo collector precedente
+    RoundHandler.stopRound(); 
     gameState.player.stop();
 
     // prendo nuova random
-    const track = gameState.tracks[Math.floor(Math.random() * gameState.tracks.length)];
+    let track;
+    // Se tutte le tracce sono state giocate, riparte dal ciclo
+    // TODO: gestire meglio: magari far andare ad un altro artista o terminare il game
+    if (gameState.playedTracks.length >= gameState.tracks.length) {
+        gameState.playedTracks = [];
+    }   
+    do {
+        track = gameState.tracks[Math.floor(Math.random() * gameState.tracks.length)];
+        // controllo non sia la stessa
+    } while (gameState.playedTracks.includes(track));
 
+    // la aggiungo a played tracks
+    gameState.playedTracks.push(track)
+    
     // cerco la canzone
     const song = await YouTube.searchSong(`${track.name} ${track.artists[0].name}`);
     if (!song) return interaction.channel.send('No results found!');
@@ -176,6 +191,9 @@ async function nextRound(interaction) {
     };
 
     gameState.player = player;
+
+    // faccio ripartire il collector
+    RoundHandler.startRound(interaction, module.exports)
 }
 
 
@@ -188,23 +206,46 @@ async function nextRound(interaction) {
  */
 function checkGuess(userId, guess) {
     // controllo se c'è una partita in corso
-    if (!gameState) return;
+    if (!gameState) {
+        console.warn('checkGuess called but gameState is null');
+        return false;
+    }
 
     // prendo il nome della canzone da indovinare
     const toGuess = gameState.currentSong.title
 
-    // pulisco un po
-    const clean = str => str.toLowerCase()
-        .replace(/[^a-z0-9]/g, '') // rimuovo punteggiatura
-        .trim(); // eventuali whitespace
+    // pulisco meglio - preservo spazi interni e converto a minuscole
+    const clean = str => str
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, ' ') // normalizza spazi multipli a uno singolo
+        .replace(/[''´`]/g, "'") // normalizza apostrofi diversi
+        .replace(/[-–—]/g, '-'); // normalizza trattini diversi
 
-    // confronto
-    if (clean(guess) === clean(toGuess) || (clean(toGuess).includes(clean(guess)) && clean(guess).length > 2)) {
+    const cleanGuess = clean(guess);
+    const cleanToGuess = clean(toGuess);
+
+    console.log(`[checkGuess] User: ${userId}, Guess: "${guess}" → "${cleanGuess}", Expected: "${toGuess}" → "${cleanToGuess}"`);
+
+    // Controllo esatto ignorando punteggiatura
+    if (cleanGuess === cleanToGuess) {
+        console.log('[checkGuess] Exact match!');
         database.addPoint(userId);
         return true;
-    } else {
-        return false
     }
+
+    // Controllo se è una corrispondenza principale (es: "let it be" vs "Let It Be - Remaster")
+    // Estrai la parte principale del titolo (prima di qualsiasi "-" o parentesi)
+    const mainTitle = cleanToGuess.split(/[-–—]/)[0].trim();
+    
+    if (cleanGuess === mainTitle) {
+        console.log('[checkGuess] Main title match!');
+        database.addPoint(userId);
+        return true;
+    }
+
+    console.log('[checkGuess] No match found');
+    return false;
 }
 
 /**

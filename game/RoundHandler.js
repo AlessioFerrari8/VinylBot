@@ -1,4 +1,3 @@
-
 /** @type {*} Memorizza il collector di messaggi corrente per questo round */
 let currentCollector = null;
 
@@ -18,24 +17,35 @@ async function startRound(interaction, gameManager) {
         const userId = message.author.id
         const guess = message.content
 
+        console.log(`[RoundHandler] Collected message from ${userId}: "${guess}"`);
+
         // controllo se ha indovinato
         const correct = gameManager.checkGuess(userId, guess);
 
         // indovinato
         if (correct) {
+            console.log(`[RoundHandler] CORRECT answer from ${userId}!`);
             // fermo il collector e mando ack
             collector.stop('correct');
-            interaction.channel.send(`The song was guessed bt ${userId} **${gameManager.getCurrentSong().title}** 
-            by *${gameManager.getCurrentSong().artist}*`);
+            const currentSong = gameManager.getCurrentSong();
+            if (currentSong) {
+                interaction.channel.send(`The song was guessed by <@${userId}> **${currentSong.title}** by *${currentSong.artist}*`);
+            }
             // vado al prossimo round
             await gameManager.nextRound(interaction); 
+        } else {
+            console.log(`[RoundHandler] INCORRECT answer from ${userId}: "${guess}"`);
         }
     });
 
     collector.on('end', async (collected, reason) => {
+        console.log(`[RoundHandler] Collector ended - reason: ${reason}`);
         if (reason != 'correct') {
             // vuol dire che è scaduto il tempo
-            interaction.channel.send(`Time ended! The song was **${gameManager.getToGuess()}**`);
+            const toGuess = gameManager.getToGuess();
+            if (toGuess) {
+                interaction.channel.send(`Time ended! The song was **${toGuess}**`);
+            }
             await gameManager.nextRound(interaction);
 
         }
