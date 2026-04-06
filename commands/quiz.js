@@ -118,6 +118,68 @@ const commands = [
         }
 
     },
+
+    {
+        /**
+         * Comando Stats
+         * Visualizza i punti del giocatore + il badge 
+         */
+        data: new SlashCommandBuilder()
+            .setName('stats')
+            .setDescription('Shows your stats'),
+        
+        async execute(interaction) {
+            // prendo id
+            const userId = interaction.user.id;
+            // punti
+            const points = database.getScore(userId);
+            // calcolo il badge in base ai punti
+            const badge = database.getBadge(points);
+            
+            // calcolo il rank nella classifica
+            const leaderboard = database.getLeaderboard();
+            const rank = leaderboard.findIndex(([id]) => id === userId) + 1;
+
+            // streak
+            const streak = database.getStreak(userId);
+            const maxStreak = database.getMaxStreak(userId);
+
+            // piccoli calcoli per la nextTier e i punti per arrivarci
+            const nextTierPoints = [5, 10, 20, 50, 100, Infinity];
+            const currentTierIndex = [0, 5, 10, 20, 50].findIndex(p => points < p);
+            const nextTier = nextTierPoints[currentTierIndex];
+            const pointsToNext = nextTier - points;
+
+            // output
+            const statsText = `
+            📊 **Your Personal Stats**
+            ═══════════════════
+            👤 Player: <@${userId}>
+            🏅 Rank: #${rank} of ${leaderboard.length}
+            ⭐ Points: ${points}
+            🔥 Current Streak: ${streak}
+            🏆 Best Streak: ${maxStreak}
+            🎖️ Badge: ${badge.emoji} **${badge.name}** (Tier ${badge.tier})
+            📈 Progress: ${points}/${nextTier} pts
+            🎯 Next tier: +${pointsToNext} points
+            `;
+
+            // progressbar carina
+            const progressPercentage = Math.round((points / nextTier) * 10);
+            const filled = '█'.repeat(progressPercentage);
+            const empty = '░'.repeat(10 - progressPercentage);
+            // mi calcolo la perc
+            const progressBar = `[${filled}${empty}] ${Math.round((points / nextTier) * 100)}%`;
+
+            // aggiungo anche la statsbar
+            const finalStats = `${statsText}
+            ${progressBar}
+            `;
+
+            interaction.reply(finalStats);        
+        }
+
+    }, // TODO: aggiungere /streak
 ];
 
 module.exports = commands;
