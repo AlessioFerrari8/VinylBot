@@ -33,10 +33,22 @@ function save(scores) {
  */
 function addPoint(userId) {
     const scores = load()
+    // se utente non esiste, lo creo
     if (scores[userId] == null) {
-        scores[userId] = 0 
+        scores[userId] = {
+            points: 0,
+            streak: 0,
+            maxStreak: 0
+        };
     }
-    scores[userId] += 1
+    // incremento punti e streak
+    scores[userId].points += 1
+    scores[userId].streak += 1
+
+    // aggiorno max streak
+    if (scores[userId].streak > scores[userId].maxStreak) {
+        scores[userId].maxStreak = scores[userId].streak;
+    }
     save(scores)
 }
 
@@ -47,7 +59,12 @@ function addPoint(userId) {
  */
 function getScore(userId) {
     const scores = load()
-    return scores[userId] || 0;
+
+    if (typeof scores[userId] === 'number') {
+        return scores[userId];
+    }
+    
+    return scores[userId]?.points || 0;
 }
 
 /**
@@ -57,7 +74,12 @@ function getScore(userId) {
 function getLeaderboard() {
     const scores = load();
     // trasforma in array e ordina 
-    return Object.entries(scores)
+        return Object.entries(scores)
+        .map(([userId, data]) => {
+            // Compatibilità con vecchia struttura
+            const points = typeof data === 'number' ? data : data.points;
+            return [userId, points];
+        })
         .sort((a, b) => b[1] - a[1]);
 }
 
@@ -66,6 +88,7 @@ function getLeaderboard() {
  */
 function resetScores() {
     // semplicemente salvo con tutti i punteggi vuoti (AURA)
+    // aggiorno ovviamente anche streak e tutto
     save({})
 }
 
@@ -84,4 +107,51 @@ function getBadge(points) {
 }
 
 
-module.exports = { addPoint, getScore, getLeaderboard, resetScores, getBadge }
+/**
+ * Gets the streak of the user
+ * @param {*} userId user
+ * @returns the streak
+ */
+function getStreak(userId) {
+    // carico score e userData
+    const scores = load()
+    const userData = scores[userId]
+
+    if (!userData) return 0; // vuoto
+    if (typeof userData === 'number') return 0; // struttura vecchia
+
+    return userData.streak || 0;
+}
+
+/**
+ * Gets the max streak of the user
+ * @param {*} userId user
+ * @returns the max streak
+ */
+function getMaxStreak(userId) {
+    // stessa procedura `getStreak()`
+    const scores = load()
+    const userData = scores[userId]
+
+    if (!userData) return 0;
+    if (typeof userData === 'number') return 0; // gestisco sempre anche vecchia struttura
+
+    return userData.maxStreak || 0;
+}
+
+/**
+ * Resets the streak of a user if he doesn't win this round
+ * @param {*} userId discord user
+ */
+function resetStreak(userId) {
+    const scores = load()
+
+    // aggiorno streak
+    if (scores[userId] && typeof scores[userId] === 'object') {
+        scores[userId].streak = 0;
+        save(scores)
+    }
+}
+
+
+module.exports = { addPoint, getScore, getLeaderboard, resetScores, getBadge, getStreak, getMaxStreak, resetStreak }

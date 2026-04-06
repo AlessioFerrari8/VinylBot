@@ -1,3 +1,5 @@
+const database = require('../db/database');
+
 /** @type {*} Memorizza il collector di messaggi corrente per questo round */
 let currentCollector = null;
 
@@ -41,6 +43,10 @@ async function startRound(interaction, gameManager) {
     collector.on('end', async (collected, reason) => {
         console.log(`[RoundHandler] Collector ended - reason: ${reason}`);
         if (reason != 'correct') {
+            // Resetta streak di tutti gli utenti che non hanno vinto
+            collected.forEach(message => {
+                database.resetStreak(message.author.id);
+            });
             // vuol dire che è scaduto il tempo
             const toGuess = gameManager.getToGuess();
             if (toGuess) {
