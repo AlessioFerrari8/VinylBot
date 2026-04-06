@@ -287,7 +287,8 @@ async function getArtistTopTracks(userId, artistName) {
     const auth = await api.clientCredentialsGrant();
     api.setAccessToken(auth.body.access_token);
     
-    const result = await api.searchTracks(`artist:${artistName}`);
+    const result = await api.searchTracks(`artist:${artistName}`, { limit: 10});
+    console.log("Results", result.body.tracks.items)
 
     return result.body.tracks.items;
 }
