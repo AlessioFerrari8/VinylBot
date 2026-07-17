@@ -1,0 +1,16 @@
+# fly.toml app configuration file generated for vinylbot
+app = "vinylbot"
+primary_region = "ams"
+
+[build]
+dockerfile = "./Dockerfile"
+
+[env]
+PORT = "8888"
+
+[[services]]
+internal_port = 8888
+processes = ["app"]
+
+[services.http_checks]
+enabled = false

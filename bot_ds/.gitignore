@@ -1,0 +1,38 @@
+# Dipendenze
+node_modules/
+ 
+# Variabili d'ambiente (contiene token e segreti!)
+.env
+
+# Firebase credenziali
+firebase-credentials.json
+ 
+# Token Spotify salvati degli utenti (dati sensibili!)
+tokens.json
+
+# Token Spotify salvati degli utenti (dati sensibili!)
+scores.json
+vinylbot-55b21-firebase-adminsdk-fbsvc-3742d0f090.json 
+
+# Log
+logs/
+*.log
+npm-debug.log*
+ 
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+AURA.md
+AURA2.md
+AURA3.md
+AURA4.md
+AURA5.md
+AURA6.md
+AURA7.md
+AURA8.md
+AURA9.md
+AURA10.md
+AURA11.md
+
+cookies.txt

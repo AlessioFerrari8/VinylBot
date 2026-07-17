@@ -1,0 +1,9 @@
+services:
+  vinylbot:
+    build: .
+    env_file: .env
+    network_mode: host
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    restart: unless-stopped
