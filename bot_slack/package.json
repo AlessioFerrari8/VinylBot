@@ -1,0 +1,21 @@
+{
+  "name": "vinylbot-slack",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "@slack/bolt": "^3.22.0",
+    "@slack/web-api": "^6.9.0",
+    "dotenv": "^16.6.1",
+    "express": "^4.18.2",
+    "firebase-admin": "^13.7.0",
+    "node-fetch": "^3.3.2",
+    "spotify-web-api-node": "^5.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
