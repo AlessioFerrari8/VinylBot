@@ -1,1 +1,255 @@
-<p>docs works!</p>
+<div class="relative min-h-screen overflow-x-hidden bg-vb-bg">
+  <!-- ambient page glow -->
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-x-0 top-0 h-[600px] opacity-60"
+    style="background: radial-gradient(60% 50% at 30% 0%, rgba(88, 101, 242, 0.15) 0%, transparent 70%), radial-gradient(50% 45% at 80% 10%, rgba(46, 182, 125, 0.1) 0%, transparent 70%);"
+  ></div>
+
+  <div class="relative">
+    <main class="mx-auto max-w-7xl px-4 pb-24 pt-16 md:px-6">
+      <!-- header -->
+      <div class="max-w-2xl">
+        <span class="text-sm font-semibold uppercase tracking-[0.18em] text-vb-purple">Documentation</span>
+        <h1 class="mt-3 font-display text-4xl font-bold tracking-tight text-white md:text-5xl">
+          Everything about VinylBot
+        </h1>
+        <p class="mt-4 text-lg leading-relaxed text-white/50">
+          How to add the bot, every command, and how to self-host it with Docker.
+        </p>
+      </div>
+
+      <div class="mt-12 grid gap-10 lg:grid-cols-[220px_1fr]">
+        <!-- sidebar -->
+        <aside class="hidden lg:block">
+          <nav class="sticky top-28 space-y-1">
+            @for (s of sections; track s.id) {
+              <a
+                routerLink="/docs"
+                [fragment]="s.id"
+                class="block rounded-lg px-3 py-2 text-sm font-medium text-white/50 transition-colors hover:bg-white/[0.04] hover:text-white"
+              >
+                {{ s.label }}
+              </a>
+            }
+          </nav>
+        </aside>
+
+        <!-- content -->
+        <div class="min-w-0 space-y-16">
+          <!-- Getting started -->
+          <section id="getting-started" class="scroll-mt-28">
+            <h2 class="font-display text-3xl font-bold tracking-tight text-white">Getting started</h2>
+            <p class="mt-4 leading-relaxed text-white/55">
+              VinylBot combines Spotify control with an interactive music guessing game.
+              Play song previews in your server and challenge your community to guess the
+              titles — first correct answer earns points, with a leaderboard, badges and
+              win-streak tracking.
+            </p>
+
+            <div class="mt-6 flex flex-wrap gap-3">
+              <a
+                [href]="inviteUrl"
+                target="_blank"
+                rel="noopener"
+                class="rounded-xl bg-vb-discord px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-vb-discord/25 transition-transform hover:-translate-y-0.5"
+              >
+                Add to Discord
+              </a>
+              <a
+                href="https://github.com/AlessioFerrari8/VinylBot"
+                target="_blank"
+                rel="noopener"
+                class="rounded-xl border border-vb-border bg-white/[0.03] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:border-white/25"
+              >
+                View on GitHub
+              </a>
+            </div>
+
+            <div class="mt-8 rounded-2xl border border-vb-border bg-vb-card p-6">
+              <h3 class="font-display text-base font-semibold text-white">⚠️ Hosted instance disclaimer</h3>
+              <p class="mt-2 text-sm leading-relaxed text-white/55">
+                The public hosted bot plays from a limited local music library, because
+                YouTube blocks audio streaming from datacenter IPs. For the full game
+                experience with any artist, self-host the bot — full instructions below.
+              </p>
+            </div>
+          </section>
+
+          <!-- Discord bot -->
+          <section id="discord-bot" class="scroll-mt-28">
+            <h2 class="font-display text-3xl font-bold tracking-tight text-white">Discord bot</h2>
+
+            <div class="mt-6 grid gap-5 md:grid-cols-2">
+              <div class="rounded-2xl border border-vb-border bg-vb-card p-6">
+                <h3 class="font-display text-lg font-semibold text-white">🎮 Music guessing game</h3>
+                <p class="mt-2 text-sm leading-relaxed text-white/55">
+                  Start a game with any Spotify artist, listen to song previews in a
+                  voice channel and guess the title in chat. Points, hints after 15
+                  seconds, leaderboard with badges and win streaks.
+                </p>
+              </div>
+              <div class="rounded-2xl border border-vb-border bg-vb-card p-6">
+                <h3 class="font-display text-lg font-semibold text-white">🎵 Spotify control</h3>
+                <p class="mt-2 text-sm leading-relaxed text-white/55">
+                  Link your own Spotify account and control playback right from
+                  Discord: play, pause, skip, volume and now-playing info — each user
+                  controls their own device.
+                </p>
+              </div>
+            </div>
+
+            <h3 class="mt-10 font-display text-xl font-semibold text-white">Spotify authentication flow</h3>
+            <ol class="mt-4 space-y-3">
+              @for (step of authFlow; track $index) {
+                <li class="flex items-start gap-3">
+                  <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-vb-discord to-vb-purple text-xs font-bold text-white">
+                    {{ $index + 1 }}
+                  </span>
+                  <span class="text-sm leading-relaxed text-white/60">{{ step }}</span>
+                </li>
+              }
+            </ol>
+
+            <h3 class="mt-10 font-display text-xl font-semibold text-white">Required permissions</h3>
+            <div class="mt-4 flex flex-wrap gap-2">
+              @for (p of permissions; track p) {
+                <span class="rounded-full border border-vb-border bg-vb-card px-3.5 py-1.5 text-xs font-medium text-white/70">
+                  {{ p }}
+                </span>
+              }
+            </div>
+          </section>
+
+          <!-- Commands -->
+          <section id="commands" class="scroll-mt-28">
+            <h2 class="font-display text-3xl font-bold tracking-tight text-white">Commands</h2>
+
+            <h3 class="mt-6 font-display text-xl font-semibold text-white">🎮 Game commands</h3>
+            <div class="mt-4 overflow-x-auto rounded-2xl border border-vb-border bg-vb-card">
+              <table class="w-full text-left text-sm">
+                <thead>
+                  <tr class="border-b border-vb-border text-xs uppercase tracking-wider text-white/40">
+                    <th class="px-5 py-3 font-semibold">Command</th>
+                    <th class="px-5 py-3 font-semibold">Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (c of gameCommands; track c.cmd) {
+                    <tr class="border-b border-vb-border last:border-0">
+                      <td class="px-5 py-3"><code class="code-chip">{{ c.cmd }}</code></td>
+                      <td class="px-5 py-3 text-white/60">{{ c.desc }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <h3 class="mt-8 font-display text-xl font-semibold text-white">🎵 Spotify commands</h3>
+            <div class="mt-4 overflow-x-auto rounded-2xl border border-vb-border bg-vb-card">
+              <table class="w-full text-left text-sm">
+                <thead>
+                  <tr class="border-b border-vb-border text-xs uppercase tracking-wider text-white/40">
+                    <th class="px-5 py-3 font-semibold">Command</th>
+                    <th class="px-5 py-3 font-semibold">Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (c of spotifyCommands; track c.cmd) {
+                    <tr class="border-b border-vb-border last:border-0">
+                      <td class="px-5 py-3"><code class="code-chip">{{ c.cmd }}</code></td>
+                      <td class="px-5 py-3 text-white/60">{{ c.desc }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Slack bot -->
+          <section id="slack-bot" class="scroll-mt-28">
+            <div class="flex flex-wrap items-center gap-3">
+              <h2 class="font-display text-3xl font-bold tracking-tight text-white">Slack bot</h2>
+              <span class="rounded-full bg-vb-slack/10 px-3 py-1 text-xs font-semibold text-vb-slack">
+                In development
+              </span>
+            </div>
+            <p class="mt-4 leading-relaxed text-white/55">
+              The Slack version is a separate project designed around how Slack works —
+              no voice channels, so the game lives entirely in chat. The bot plays a
+              15-second song preview, and whoever writes the title first in the channel
+              wins points. Same leaderboard, streaks and badges as the Discord version.
+            </p>
+            <div class="mt-6 rounded-2xl border border-vb-border bg-vb-card p-6">
+              <p class="text-sm leading-relaxed text-white/55">
+                Setup instructions and the install link will land here as soon as the
+                Slack bot ships. Follow the
+                <a href="https://github.com/AlessioFerrari8/VinylBot/tree/main/bot_slack" target="_blank" rel="noopener" class="text-vb-slack underline-offset-4 hover:underline">GitHub repository</a>
+                for progress.
+              </p>
+            </div>
+          </section>
+
+          <!-- Self-hosting -->
+          <section id="self-hosting" class="scroll-mt-28">
+            <h2 class="font-display text-3xl font-bold tracking-tight text-white">Self-hosting</h2>
+            <p class="mt-4 leading-relaxed text-white/55">
+              Prerequisites: Node.js 18+, a Discord bot token, Spotify developer
+              credentials, and optionally Docker &amp; Docker Compose for deployment.
+            </p>
+
+            <h3 class="mt-8 font-display text-xl font-semibold text-white">1. Clone and install</h3>
+            <pre class="mt-3 overflow-x-auto rounded-xl border border-vb-border bg-vb-card p-4 font-mono text-sm leading-relaxed text-white/75">{{ cloneSnippet }}</pre>
+
+            <h3 class="mt-8 font-display text-xl font-semibold text-white">2. Create your <code class="code-chip">.env</code></h3>
+            <pre class="mt-3 overflow-x-auto rounded-xl border border-vb-border bg-vb-card p-4 font-mono text-sm leading-relaxed text-white/75">{{ envSnippet }}</pre>
+
+            <h3 class="mt-8 font-display text-xl font-semibold text-white">3. Spotify OAuth setup</h3>
+            <ul class="mt-3 space-y-2 text-sm leading-relaxed text-white/60">
+              <li>• Go to the <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener" class="text-vb-purple underline-offset-4 hover:underline">Spotify Developer Dashboard</a></li>
+              <li>• Create or edit your app</li>
+              <li>• Add the Redirect URI: <code class="code-chip">http://localhost:8888/callback</code></li>
+              <li>• Copy the Client ID and Secret into your <code class="code-chip">.env</code></li>
+            </ul>
+
+            <h3 class="mt-8 font-display text-xl font-semibold text-white">4. Run locally</h3>
+            <pre class="mt-3 overflow-x-auto rounded-xl border border-vb-border bg-vb-card p-4 font-mono text-sm leading-relaxed text-white/75">{{ runSnippet }}</pre>
+
+            <h3 class="mt-10 font-display text-xl font-semibold text-white">🐳 Docker Compose (recommended)</h3>
+            <p class="mt-2 text-sm leading-relaxed text-white/55">
+              Run the bot inside Docker without installing Node.js locally — same
+              <code class="code-chip">.env</code> as above.
+            </p>
+            <pre class="mt-3 overflow-x-auto rounded-xl border border-vb-border bg-vb-card p-4 font-mono text-sm leading-relaxed text-white/75">{{ dockerSnippet }}</pre>
+
+            <h3 class="mt-10 font-display text-xl font-semibold text-white">🌐 ngrok for HTTPS (if needed)</h3>
+            <p class="mt-2 text-sm leading-relaxed text-white/55">
+              To test the Spotify OAuth callback with HTTPS locally:
+            </p>
+            <pre class="mt-3 overflow-x-auto rounded-xl border border-vb-border bg-vb-card p-4 font-mono text-sm leading-relaxed text-white/75">{{ ngrokSnippet }}</pre>
+          </section>
+
+          <!-- Troubleshooting -->
+          <section id="troubleshooting" class="scroll-mt-28">
+            <h2 class="font-display text-3xl font-bold tracking-tight text-white">Troubleshooting</h2>
+            <div class="mt-6 grid gap-5 sm:grid-cols-2">
+              @for (t of troubleshooting; track t.title) {
+                <div class="rounded-2xl border border-vb-border bg-vb-card p-6">
+                  <h3 class="font-display text-base font-semibold text-white">{{ t.title }}</h3>
+                  <ul class="mt-3 space-y-2">
+                    @for (item of t.items; track item) {
+                      <li class="flex items-start gap-2 text-sm leading-relaxed text-white/55">
+                        <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-vb-purple"></span>
+                        {{ item }}
+                      </li>
+                    }
+                  </ul>
+                </div>
+              }
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
