@@ -42,3 +42,7 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Note di lavoro locali
+TODO.md
+content_for_claude.md
