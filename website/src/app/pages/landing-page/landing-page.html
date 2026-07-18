@@ -1,1 +1,542 @@
-<p>landing-page works!</p>
+<div class="relative min-h-screen overflow-x-hidden bg-vb-bg">
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-x-0 top-0 h-[900px] opacity-60"
+    style="background: radial-gradient(60% 50% at 30% 0%, rgba(88, 101, 242, 0.18) 0%, transparent 70%), radial-gradient(50% 45% at 80% 10%, rgba(46, 182, 125, 0.12) 0%, transparent 70%);"
+  ></div>
+
+  <div class="relative">
+
+    <main>
+      <section class="mx-auto max-w-7xl px-4 pb-24 pt-20 md:px-6 md:pt-28">
+        <div class="grid items-center gap-16 lg:grid-cols-[1.05fr_1fr]">
+          <div>
+            <div class="inline-flex items-center gap-2 rounded-full border border-vb-border bg-vb-card/60 px-3.5 py-1.5 text-xs font-medium text-white/70 backdrop-blur">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-3.5 w-3.5 text-vb-purple">
+                <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" /><path d="M20 2v4" /><path d="M22 4h-4" /><circle cx="4" cy="20" r="2" />
+              </svg>
+              Open Source
+              <span class="text-white/25">•</span>
+              Free Forever
+            </div>
+
+            <h1 class="mt-6 font-display text-5xl font-bold leading-[1.05] tracking-tight text-balance text-white md:text-6xl lg:text-7xl">
+              Control your music from
+              <span class="bg-gradient-to-r from-vb-discord via-vb-purple to-vb-slack bg-clip-text text-transparent">
+                Discord or Slack.
+              </span>
+            </h1>
+
+            <p class="mt-6 max-w-lg text-lg leading-relaxed text-white/55 text-pretty">
+              VinylBot brings powerful, playful music controls right into your
+              favorite chat app. Queue tracks, run the vinyl game, and vibe with
+              your community, all in one command.
+            </p>
+
+            <div class="mt-9 flex flex-col gap-3 sm:flex-row">
+              <button class="group flex items-center justify-center gap-2 rounded-2xl bg-vb-discord px-6 py-3.5 text-base font-semibold text-white shadow-xl shadow-vb-discord/30 transition-transform hover:-translate-y-0.5 cursor-pointer">
+                Download for Discord
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-4 w-4 transition-transform group-hover:translate-x-0.5">
+                  <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
+                </svg>
+              </button>
+              <button class="group flex items-center justify-center gap-2 rounded-2xl bg-vb-slack px-6 py-3.5 text-base font-semibold text-white shadow-xl shadow-vb-slack/30 transition-transform hover:-translate-y-0.5 cursor-pointer">
+                Download for Slack
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-4 w-4 transition-transform group-hover:translate-x-0.5">
+                  <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            <p class="mt-5 text-sm text-white/35">
+              No credit card. No sign-up. Just add and play.
+            </p>
+          </div>
+
+          <div class="relative h-[420px] w-full md:h-[500px]">
+            <div aria-hidden="true" class="absolute -right-10 top-4 h-72 w-72 rounded-full bg-vb-discord/30 blur-[90px]"></div>
+            <div aria-hidden="true" class="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-vb-slack/25 blur-[90px]"></div>
+
+            <div class="absolute right-2 top-0 w-[78%] rotate-[4deg] overflow-hidden rounded-2xl border border-vb-border bg-vb-card shadow-2xl shadow-black/60">
+              <img src="/slack-mockup.png" alt="VinylBot running inside a Slack workspace" width="720" height="520" class="h-auto w-full" />
+            </div>
+
+            <div class="absolute -left-2 bottom-2 w-[82%] -rotate-[3deg] overflow-hidden rounded-2xl border border-vb-border bg-vb-card shadow-2xl shadow-black/70">
+              <img src="/discord-mockup.png" alt="VinylBot slash commands inside a Discord channel" width="760" height="540" class="h-auto w-full" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mx-auto max-w-7xl px-4 pb-24 md:px-6">
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="group rounded-2xl border border-vb-border bg-vb-card p-6 transition-colors hover:border-white/20">
+            <span class="flex h-11 w-11 items-center justify-center rounded-xl border border-vb-border bg-white/[0.03] text-vb-purple">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="h-5 w-5">
+                <path d="M12 .5C5.37.5 0 5.87 0 12.5c0 5.3 3.44 9.8 8.21 11.39.6.11.82-.26.82-.58 0-.29-.01-1.04-.02-2.05-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.73.08-.73 1.21.09 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.31 3.5 1 .11-.78.42-1.31.76-1.61-2.67-.3-5.47-1.34-5.47-5.95 0-1.31.47-2.39 1.24-3.23-.12-.31-.54-1.53.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6.01 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.65.24 2.87.12 3.18.77.84 1.24 1.92 1.24 3.23 0 4.62-2.81 5.64-5.49 5.94.43.37.81 1.1.81 2.22 0 1.61-.01 2.9-.01 3.29 0 .32.22.7.83.58A12.01 12.01 0 0 0 24 12.5C24 5.87 18.63.5 12 .5Z" />
+              </svg>
+            </span>
+            <h3 class="mt-4 font-display text-lg font-semibold text-white">Open Source</h3>
+            <p class="mt-1 text-sm leading-relaxed text-white/50">MIT licensed, fully auditable</p>
+          </div>
+
+          <div class="group rounded-2xl border border-vb-border bg-vb-card p-6 transition-colors hover:border-white/20">
+            <span class="flex h-11 w-11 items-center justify-center rounded-xl border border-vb-border bg-white/[0.03] text-vb-purple">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-5 w-5">
+                <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+              </svg>
+            </span>
+            <h3 class="mt-4 font-display text-lg font-semibold text-white">Fast &amp; Reliable</h3>
+            <p class="mt-1 text-sm leading-relaxed text-white/50">Sub-50ms command responses</p>
+          </div>
+
+          <div class="group rounded-2xl border border-vb-border bg-vb-card p-6 transition-colors hover:border-white/20">
+            <span class="flex h-11 w-11 items-center justify-center rounded-xl border border-vb-border bg-white/[0.03] text-vb-purple">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-5 w-5">
+                <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" /><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" /><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" />
+              </svg>
+            </span>
+            <h3 class="mt-4 font-display text-lg font-semibold text-white">Cross Platform</h3>
+            <p class="mt-1 text-sm leading-relaxed text-white/50">Discord &amp; Slack, one bot</p>
+          </div>
+
+          <div class="group rounded-2xl border border-vb-border bg-vb-card p-6 transition-colors hover:border-white/20">
+            <span class="flex h-11 w-11 items-center justify-center rounded-xl border border-vb-border bg-white/[0.03] text-vb-purple">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-5 w-5">
+                <path d="M12 7v14" /><path d="M20 11v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8" /><path d="M7.5 7a1 1 0 0 1 0-5A4.8 8 0 0 1 12 7a4.8 8 0 0 1 4.5-5 1 1 0 0 1 0 5" /><rect x="3" y="7" width="18" height="4" rx="1" />
+              </svg>
+            </span>
+            <h3 class="mt-4 font-display text-lg font-semibold text-white">Free Forever</h3>
+            <p class="mt-1 text-sm leading-relaxed text-white/50">No paywalls, no premium tier</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================= FEATURES ============================= -->
+      <section id="features" class="mx-auto max-w-7xl px-4 py-24 md:px-6">
+        <div class="mx-auto max-w-2xl text-center">
+          <span class="text-sm font-semibold uppercase tracking-[0.18em] text-vb-purple">Features</span>
+          <h2 class="mt-3 font-display text-4xl font-bold tracking-tight text-balance text-white md:text-5xl">
+            Everything your server needs
+          </h2>
+          <p class="mt-4 text-lg leading-relaxed text-white/50 text-pretty">
+            A focused set of tools that make shared listening effortless and fun.
+          </p>
+        </div>
+
+        <div class="mt-14 grid gap-5 md:grid-cols-3">
+          <div class="group relative overflow-hidden rounded-3xl border border-vb-border bg-vb-card p-8 transition-transform hover:-translate-y-1">
+            <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-vb-discord to-vb-purple shadow-xl shadow-vb-discord/30">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-7 w-7 text-white">
+                <path d="M9 18V5l12-2v13" /><path d="m9 9 12-2" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+              </svg>
+            </span>
+            <h3 class="mt-6 font-display text-2xl font-semibold text-white">Music Controls</h3>
+            <p class="mt-3 leading-relaxed text-white/55">
+              Play, pause, queue, shuffle and skip, all through clean slash commands
+              with beautiful now-playing embeds.
+            </p>
+          </div>
+
+          <div class="group relative overflow-hidden rounded-3xl border border-vb-border bg-vb-card p-8 transition-transform hover:-translate-y-1">
+            <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-vb-purple to-vb-slack shadow-xl shadow-vb-purple/30">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-7 w-7 text-white">
+                <circle cx="12" cy="12" r="10" /><path d="M6 12c0-1.7.7-3.2 1.8-4.2" /><circle cx="12" cy="12" r="2" /><path d="M18 12c0 1.7-.7 3.2-1.8 4.2" />
+              </svg>
+            </span>
+            <h3 class="mt-6 font-display text-2xl font-semibold text-white">Vinyl Game</h3>
+            <p class="mt-3 leading-relaxed text-white/55">
+              A built-in guess-the-track game that turns your server into a nightly
+              listening party with scores and streaks.
+            </p>
+          </div>
+
+          <div class="group relative overflow-hidden rounded-3xl border border-vb-border bg-vb-card p-8 transition-transform hover:-translate-y-1">
+            <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-vb-slack to-vb-discord shadow-xl shadow-vb-slack/30">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-7 w-7 text-white">
+                <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+              </svg>
+            </span>
+            <h3 class="mt-6 font-display text-2xl font-semibold text-white">Lightning Fast</h3>
+            <p class="mt-3 leading-relaxed text-white/55">
+              Optimized command handling and edge caching means every reaction feels
+              instant, even in the busiest servers.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="platforms" class="mx-auto max-w-7xl px-4 py-24 md:px-6">
+        <div class="mx-auto max-w-2xl text-center">
+          <span class="text-sm font-semibold uppercase tracking-[0.18em] text-vb-purple">Platforms</span>
+          <h2 class="mt-3 font-display text-4xl font-bold tracking-tight text-balance text-white md:text-5xl">
+            Built for both worlds
+          </h2>
+          <p class="mt-4 text-lg leading-relaxed text-white/50 text-pretty">
+            One codebase, two first-class integrations. Choose where your people already are.
+          </p>
+        </div>
+
+        <div class="mt-14 grid gap-5 md:grid-cols-2">
+          <!-- Discord -->
+          <div class="group relative overflow-hidden rounded-3xl border border-vb-border bg-vb-card p-10 transition-colors hover:border-vb-discord/40">
+            <div aria-hidden="true" class="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-vb-discord/20 blur-3xl"></div>
+            <div class="relative">
+              <div class="flex items-center gap-3">
+                <span class="flex h-12 w-12 items-center justify-center rounded-2xl border border-vb-border bg-white/[0.03]">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-6 w-6 text-vb-discord">
+                    <path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" />
+                  </svg>
+                </span>
+                <h3 class="font-display text-2xl font-semibold text-white">Discord</h3>
+              </div>
+
+              <ul class="mt-8 space-y-3.5">
+                <li class="flex items-center gap-3">
+                  <span class="flex h-6 w-6 items-center justify-center rounded-full bg-vb-discord/10 text-vb-discord">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-3.5 w-3.5"><path d="M20 6 9 17l-5-5" /></svg>
+                  </span>
+                  <span class="text-white/70">Slash commands</span>
+                </li>
+                <li class="flex items-center gap-3">
+                  <span class="flex h-6 w-6 items-center justify-center rounded-full bg-vb-discord/10 text-vb-discord">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-3.5 w-3.5"><path d="M20 6 9 17l-5-5" /></svg>
+                  </span>
+                  <span class="text-white/70">Beautiful embeds</span>
+                </li>
+                <li class="flex items-center gap-3">
+                  <span class="flex h-6 w-6 items-center justify-center rounded-full bg-vb-discord/10 text-vb-discord">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-3.5 w-3.5"><path d="M20 6 9 17l-5-5" /></svg>
+                  </span>
+                  <span class="text-white/70">Community friendly</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Slack -->
+          <div class="group relative overflow-hidden rounded-3xl border border-vb-border bg-vb-card p-10 transition-colors hover:border-vb-slack/40">
+            <div aria-hidden="true" class="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-vb-slack/20 blur-3xl"></div>
+            <div class="relative">
+              <div class="flex items-center gap-3">
+                <span class="flex h-12 w-12 items-center justify-center rounded-2xl border border-vb-border bg-white/[0.03]">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-6 w-6 text-vb-slack">
+                    <line x1="4" x2="20" y1="9" y2="9" /><line x1="4" x2="20" y1="15" y2="15" /><line x1="10" x2="8" y1="3" y2="21" /><line x1="16" x2="14" y1="3" y2="21" />
+                  </svg>
+                </span>
+                <h3 class="font-display text-2xl font-semibold text-white">Slack</h3>
+              </div>
+
+              <ul class="mt-8 space-y-3.5">
+                <li class="flex items-center gap-3">
+                  <span class="flex h-6 w-6 items-center justify-center rounded-full bg-vb-slack/10 text-vb-slack">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-3.5 w-3.5"><path d="M20 6 9 17l-5-5" /></svg>
+                  </span>
+                  <span class="text-white/70">Workspace integration</span>
+                </li>
+                <li class="flex items-center gap-3">
+                  <span class="flex h-6 w-6 items-center justify-center rounded-full bg-vb-slack/10 text-vb-slack">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-3.5 w-3.5"><path d="M20 6 9 17l-5-5" /></svg>
+                  </span>
+                  <span class="text-white/70">Team productivity</span>
+                </li>
+                <li class="flex items-center gap-3">
+                  <span class="flex h-6 w-6 items-center justify-center rounded-full bg-vb-slack/10 text-vb-slack">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-3.5 w-3.5"><path d="M20 6 9 17l-5-5" /></svg>
+                  </span>
+                  <span class="text-white/70">Easy collaboration</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mx-auto max-w-7xl px-4 py-24 md:px-6">
+        <div class="mx-auto max-w-2xl text-center">
+          <span class="text-sm font-semibold uppercase tracking-[0.18em] text-vb-purple">How it works</span>
+          <h2 class="mt-3 font-display text-4xl font-bold tracking-tight text-balance text-white md:text-5xl">
+            Up and running in minutes
+          </h2>
+          <p class="mt-4 text-lg leading-relaxed text-white/50 text-pretty">
+            No servers to manage, no config files to edit. Four steps and you're live.
+          </p>
+        </div>
+
+        <div class="relative mt-16">
+          <div aria-hidden="true" class="absolute left-0 right-0 top-7 hidden h-px bg-gradient-to-r from-transparent via-vb-border to-transparent lg:block"></div>
+          <ol class="grid gap-8 lg:grid-cols-4">
+            <li class="relative flex flex-col items-center text-center lg:items-start lg:text-left">
+              <span class="relative z-10 flex h-14 w-14 items-center justify-center rounded-2xl border border-vb-border bg-vb-card text-vb-purple shadow-lg shadow-black/40">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-6 w-6">
+                  <path d="M12 15V3" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" />
+                </svg>
+                <span class="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-vb-discord to-vb-purple text-xs font-bold text-white">1</span>
+              </span>
+              <h3 class="mt-5 font-display text-lg font-semibold text-white">Download</h3>
+              <p class="mt-2 text-sm leading-relaxed text-white/50">Add VinylBot to Discord or Slack in one click.</p>
+            </li>
+
+            <li class="relative flex flex-col items-center text-center lg:items-start lg:text-left">
+              <span class="relative z-10 flex h-14 w-14 items-center justify-center rounded-2xl border border-vb-border bg-vb-card text-vb-purple shadow-lg shadow-black/40">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-6 w-6">
+                  <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z" />
+                </svg>
+                <span class="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-vb-discord to-vb-purple text-xs font-bold text-white">2</span>
+              </span>
+              <h3 class="mt-5 font-display text-lg font-semibold text-white">Install</h3>
+              <p class="mt-2 text-sm leading-relaxed text-white/50">Invite it to your server or workspace instantly.</p>
+            </li>
+
+            <li class="relative flex flex-col items-center text-center lg:items-start lg:text-left">
+              <span class="relative z-10 flex h-14 w-14 items-center justify-center rounded-2xl border border-vb-border bg-vb-card text-vb-purple shadow-lg shadow-black/40">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-6 w-6">
+                  <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+                </svg>
+                <span class="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-vb-discord to-vb-purple text-xs font-bold text-white">3</span>
+              </span>
+              <h3 class="mt-5 font-display text-lg font-semibold text-white">Connect Spotify</h3>
+              <p class="mt-2 text-sm leading-relaxed text-white/50">Link your account to unlock full playback.</p>
+            </li>
+
+            <li class="relative flex flex-col items-center text-center lg:items-start lg:text-left">
+              <span class="relative z-10 flex h-14 w-14 items-center justify-center rounded-2xl border border-vb-border bg-vb-card text-vb-purple shadow-lg shadow-black/40">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-6 w-6">
+                  <path d="M5.8 11.3 2 22l10.7-3.79" /><path d="M4 3h.01" /><path d="M22 8h.01" /><path d="M15 2h.01" /><path d="M22 20h.01" /><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10" /><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17" /><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7" /><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z" />
+                </svg>
+                <span class="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-vb-discord to-vb-purple text-xs font-bold text-white">4</span>
+              </span>
+              <h3 class="mt-5 font-display text-lg font-semibold text-white">Enjoy</h3>
+              <p class="mt-2 text-sm leading-relaxed text-white/50">Run a command and start the listening party.</p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section id="screenshots" class="py-24">
+        <div class="mx-auto max-w-7xl px-4 md:px-6">
+          <div class="mx-auto max-w-2xl text-center">
+            <span class="text-sm font-semibold uppercase tracking-[0.18em] text-vb-purple">Screenshots</span>
+            <h2 class="mt-3 font-display text-4xl font-bold tracking-tight text-balance text-white md:text-5xl">
+              See VinylBot in action
+            </h2>
+            <p class="mt-4 text-lg leading-relaxed text-white/50 text-pretty">
+              Real, native interfaces on both platforms, pixel-perfect embeds included.
+            </p>
+          </div>
+        </div>
+
+        <div class="relative mt-14">
+          <!-- glow -->
+          <div aria-hidden="true" class="pointer-events-none absolute inset-x-0 top-10 h-72 bg-[radial-gradient(50%_60%_at_50%_50%,rgba(139,125,255,0.18),transparent_70%)]"></div>
+
+          <div #shotsScroller (scroll)="onShotsScroll()" class="mx-auto flex max-w-6xl snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-4 md:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <figure class="relative w-[85%] shrink-0 snap-center overflow-hidden rounded-3xl border border-vb-border bg-vb-card shadow-2xl shadow-black/50 sm:w-[70%] lg:w-[58%]">
+              <span class="absolute left-4 top-4 z-10 rounded-full border border-vb-border bg-vb-bg/70 px-3 py-1 text-xs font-medium text-white/70 backdrop-blur">
+                Discord
+              </span>
+              <img src="/discord-mockup.png" alt="Discord — Now Playing" width="900" height="620" class="h-auto w-full" />
+              <figcaption class="border-t border-vb-border bg-vb-card px-5 py-4 text-sm font-medium text-white/60">
+                Discord — Now Playing
+              </figcaption>
+            </figure>
+
+            <figure class="relative w-[85%] shrink-0 snap-center overflow-hidden rounded-3xl border border-vb-border bg-vb-card shadow-2xl shadow-black/50 sm:w-[70%] lg:w-[58%]">
+              <span class="absolute left-4 top-4 z-10 rounded-full border border-vb-border bg-vb-bg/70 px-3 py-1 text-xs font-medium text-white/70 backdrop-blur">
+                Slack
+              </span>
+              <img src="/slack-mockup.png" alt="Slack — Music Channel" width="900" height="620" class="h-auto w-full" />
+              <figcaption class="border-t border-vb-border bg-vb-card px-5 py-4 text-sm font-medium text-white/60">
+                Slack — Music Channel
+              </figcaption>
+            </figure>
+          </div>
+
+          <!-- carousel controls -->
+          <div class="mt-6 flex items-center justify-center gap-3">
+            <button (click)="scrollShots(-1)" aria-label="Previous screenshot" class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-vb-border bg-vb-card text-white/60 transition-colors hover:text-white">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-5 w-5"><path d="m15 18-6-6 6-6" /></svg>
+            </button>
+            <div class="flex items-center gap-2">
+              <span class="h-2 rounded-full transition-all duration-300" [class]="activeShot() === 0 ? 'w-6 bg-vb-purple' : 'w-2 bg-white/20'"></span>
+              <span class="h-2 rounded-full transition-all duration-300" [class]="activeShot() === 1 ? 'w-6 bg-vb-purple' : 'w-2 bg-white/20'"></span>
+            </div>
+            <button (click)="scrollShots(1)" aria-label="Next screenshot" class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-vb-border bg-vb-card text-white/60 transition-colors hover:text-white">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-5 w-5"><path d="m9 18 6-6-6-6" /></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="mx-auto max-w-7xl px-4 py-24 md:px-6">
+        <div class="relative overflow-hidden rounded-3xl border border-vb-border bg-vb-card p-8 md:p-12">
+          <div aria-hidden="true" class="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-vb-purple/15 blur-3xl"></div>
+          <div class="relative grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-center">
+            <!-- left -->
+            <div>
+              <span class="text-sm font-semibold uppercase tracking-[0.18em] text-vb-purple">
+                Open Source
+              </span>
+              <h2 class="mt-3 font-display text-4xl font-bold tracking-tight text-balance text-white">
+                Built in the open
+              </h2>
+              <p class="mt-4 max-w-md leading-relaxed text-white/55 text-pretty">
+                Every line of VinylBot lives on GitHub under the MIT license.
+                It's a solo project for now — star it, fork it, or ship the
+                first outside contribution.
+              </p>
+
+              <div class="mt-8 flex flex-wrap items-center gap-3">
+                <a href="https://github.com/AlessioFerrari8/VinylBot" target="_blank" rel="noopener" class="flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-vb-bg transition-transform hover:-translate-y-0.5">
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="h-4 w-4">
+                    <path d="M12 .5C5.37.5 0 5.87 0 12.5c0 5.3 3.44 9.8 8.21 11.39.6.11.82-.26.82-.58 0-.29-.01-1.04-.02-2.05-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.73.08-.73 1.21.09 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.31 3.5 1 .11-.78.42-1.31.76-1.61-2.67-.3-5.47-1.34-5.47-5.95 0-1.31.47-2.39 1.24-3.23-.12-.31-.54-1.53.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6.01 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.65.24 2.87.12 3.18.77.84 1.24 1.92 1.24 3.23 0 4.62-2.81 5.64-5.49 5.94.43.37.81 1.1.81 2.22 0 1.61-.01 2.9-.01 3.29 0 .32.22.7.83.58A12.01 12.01 0 0 0 24 12.5C24 5.87 18.63.5 12 .5Z" />
+                  </svg>
+                  Star on GitHub
+                </a>
+                <a href="https://github.com/AlessioFerrari8/VinylBot/fork" target="_blank" rel="noopener" class="flex items-center gap-2 rounded-xl border border-vb-border bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:border-white/25">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-4 w-4">
+                    <circle cx="12" cy="18" r="3" /><circle cx="6" cy="6" r="3" /><circle cx="18" cy="6" r="3" /><path d="M18 9v2c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V9" /><path d="M12 12v3" />
+                  </svg>
+                  Fork the repo
+                </a>
+              </div>
+
+              <div class="mt-8 flex items-center gap-3">
+                <span class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-vb-card bg-gradient-to-br from-vb-discord to-vb-purple text-xs font-semibold text-white">
+                  A
+                </span>
+                <span class="text-sm text-white/45">Built and maintained by Alessio, the contributor list has room for you.</span>
+              </div>
+            </div>
+
+            <!-- right — monorepo card -->
+            <a href="https://github.com/AlessioFerrari8/VinylBot" target="_blank" rel="noopener" class="block rounded-2xl border border-vb-border bg-vb-bg/60 p-6 backdrop-blur transition-colors hover:border-white/25">
+              <div class="flex items-center gap-2 text-white/70">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="h-4 w-4">
+                  <path d="M12 .5C5.37.5 0 5.87 0 12.5c0 5.3 3.44 9.8 8.21 11.39.6.11.82-.26.82-.58 0-.29-.01-1.04-.02-2.05-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.73.08-.73 1.21.09 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.31 3.5 1 .11-.78.42-1.31.76-1.61-2.67-.3-5.47-1.34-5.47-5.95 0-1.31.47-2.39 1.24-3.23-.12-.31-.54-1.53.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6.01 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.65.24 2.87.12 3.18.77.84 1.24 1.92 1.24 3.23 0 4.62-2.81 5.64-5.49 5.94.43.37.81 1.1.81 2.22 0 1.61-.01 2.9-.01 3.29 0 .32.22.7.83.58A12.01 12.01 0 0 0 24 12.5C24 5.87 18.63.5 12 .5Z" />
+                </svg>
+                <span class="text-sm font-medium">AlessioFerrari8 / VinylBot</span>
+                <span class="ml-auto rounded-full border border-vb-border px-2 py-0.5 text-xs text-white/50">
+                  Public
+                </span>
+              </div>
+              <p class="mt-4 text-sm leading-relaxed text-white/50">
+                One monorepo, the whole project: the Discord bot, the Slack bot
+                and this very website.
+              </p>
+
+              <div class="mt-5 space-y-2.5 border-t border-vb-border pt-5">
+                <div class="flex items-center gap-2.5 text-sm text-white/55">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-4 w-4 shrink-0 text-vb-discord">
+                    <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+                  </svg>
+                  <span class="font-mono text-white/70">bot_ds</span>
+                  <span class="truncate text-white/40">— the Discord music quiz bot</span>
+                </div>
+                <div class="flex items-center gap-2.5 text-sm text-white/55">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-4 w-4 shrink-0 text-vb-slack">
+                    <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+                  </svg>
+                  <span class="font-mono text-white/70">bot_slack</span>
+                  <span class="truncate text-white/40">— the Slack version, in development</span>
+                </div>
+                <div class="flex items-center gap-2.5 text-sm text-white/55">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-4 w-4 shrink-0 text-vb-purple">
+                    <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+                  </svg>
+                  <span class="font-mono text-white/70">website</span>
+                  <span class="truncate text-white/40">— landing page &amp; docs (Angular)</span>
+                </div>
+              </div>
+
+              <div class="mt-5 flex items-center gap-5 border-t border-vb-border pt-5 text-sm text-white/60">
+                <span class="flex items-center gap-1.5">
+                  <span class="h-3 w-3 rounded-full bg-vb-discord"></span>
+                  JavaScript
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <span class="h-3 w-3 rounded-full bg-vb-purple"></span>
+                  TypeScript
+                </span>
+                <span class="ml-auto">MIT License</span>
+              </div>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================= FAQ ============================= -->
+      <section class="mx-auto max-w-3xl px-4 py-24 md:px-6">
+        <div class="mx-auto max-w-2xl text-center">
+          <span class="text-sm font-semibold uppercase tracking-[0.18em] text-vb-purple">FAQ</span>
+          <h2 class="mt-3 font-display text-4xl font-bold tracking-tight text-balance text-white md:text-5xl">
+            Questions, answered
+          </h2>
+        </div>
+
+        <div class="mt-12 space-y-3">
+          @for (f of faqs; track f.q; let i = $index) {
+            <div class="overflow-hidden rounded-2xl border border-vb-border bg-vb-card transition-colors hover:border-white/15">
+              <button (click)="toggle(i)" class="flex w-full items-center justify-between gap-4 px-6 py-5 text-left">
+                <span class="font-display text-base font-semibold text-white md:text-lg">
+                  {{ f.q }}
+                </span>
+                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-vb-border text-white/60">
+                  @if (open() === i) {
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-4 w-4"><path d="M5 12h14" /></svg>
+                  } @else {
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-4 w-4"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
+                  }
+                </span>
+              </button>
+              <div
+                class="grid transition-all duration-300 ease-out"
+                [class]="open() === i ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
+              >
+                <div class="overflow-hidden">
+                  <p class="px-6 pb-5 leading-relaxed text-white/55">
+                    {{ f.a }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- ============================= FINAL CTA ============================= -->
+      <section class="mx-auto max-w-7xl px-4 py-24 md:px-6">
+        <div class="relative overflow-hidden rounded-[2rem] border border-vb-border p-10 text-center md:p-20">
+          <!-- gradient backdrop -->
+          <div aria-hidden="true" class="absolute inset-0 bg-gradient-to-br from-vb-discord/25 via-vb-purple/20 to-vb-slack/25"></div>
+          <div aria-hidden="true" class="absolute inset-0 bg-vb-bg/40"></div>
+          <div aria-hidden="true" class="pointer-events-none absolute -bottom-24 left-1/2 h-72 w-[36rem] -translate-x-1/2 rounded-full bg-vb-purple/30 blur-[100px]"></div>
+
+          <div class="relative">
+            <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-vb-discord to-vb-purple shadow-xl shadow-vb-discord/40">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-7 w-7 text-white">
+                <circle cx="12" cy="12" r="10" /><path d="M6 12c0-1.7.7-3.2 1.8-4.2" /><circle cx="12" cy="12" r="2" /><path d="M18 12c0 1.7-.7 3.2-1.8 4.2" />
+              </svg>
+            </span>
+            <h2 class="mx-auto mt-6 max-w-2xl font-display text-4xl font-bold tracking-tight text-balance text-white md:text-6xl">
+              Start playing in seconds.
+            </h2>
+            <p class="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-white/60 text-pretty">
+              Add VinylBot to your Discord server or Slack workspace and turn any
+              channel into a listening party.
+            </p>
+
+            <div class="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
+              <button class="rounded-2xl bg-vb-discord px-7 py-3.5 text-base font-semibold text-white shadow-xl shadow-vb-discord/30 transition-transform hover:-translate-y-0.5 cursor-pointer">
+                Download for Discord
+              </button>
+              <button class="rounded-2xl bg-vb-slack px-7 py-3.5 text-base font-semibold text-white shadow-xl shadow-vb-slack/30 transition-transform hover:-translate-y-0.5 cursor-pointer">
+                Download for Slack
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
