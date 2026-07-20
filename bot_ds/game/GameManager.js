@@ -26,15 +26,50 @@ localMusic.loadSongs();  // Carica le canzoni all'avvio
 
 
 /**
- * Avvia una nuova partita con una playlist Spotify
- * Si connette al canale vocale, recupera i brani dalla playlist e inizia a riprodurre un'anteprima casuale
+ * Prova a ottenere l'audio per una track Spotify (Spotify preview / YouTube, a seconda
+ * di DEPLOY_ENV — vedi YouTubeSearch.createAudioStreamSmart). Se lo stream non è
+ * disponibile e ci sono file locali, ripiega su una canzone locale casuale — slegata
+ * dalla track richiesta, ma sempre una canzone vera da far indovinare.
+ * @param {Object} track - Oggetto track Spotify (name, artists[])
+ * @returns {Promise<{resource, currentSong}|null>} null se non c'è nessuna sorgente disponibile
+ */
+async function resolveTrackAudio(track) {
+    console.log('Searching for:', `${track.name} ${track.artists[0].name}`);
+    try {
+        const audioStream = await YouTube.createAudioStreamSmart(`${track.name} ${track.artists[0].name}`);
+        return {
+            resource: createAudioResource(audioStream.stream, { inputType: audioStream.type }),
+            currentSong: {
+                title: track.name,
+                artist: track.artists[0].name,
+                source: audioStream.source,
+            },
+        };
+    } catch (error) {
+        console.warn('[resolveTrackAudio] Stream non disponibile, provo i file locali:', error.message);
+
+        if (localMusic.songs.length === 0) return null;
+
+        const randomSong = localMusic.getRandomSong();
+        const resource = localMusic.createAudioResourceFromFile(randomSong.filePath);
+        if (!resource) return null;
+
+        return {
+            resource,
+            currentSong: { title: randomSong.name, artist: 'Local', source: 'local' },
+        };
+    }
+}
+
+/**
+ * Avvia una nuova partita con i brani top di un artista Spotify
+ * Si connette al canale vocale, recupera i brani dell'artista e inizia a riprodurre una traccia casuale
  * @async
  * @param {Object} interaction - Oggetto interaction di Discord
- * @param {string} source - artista o genere (es. The Beatles)
+ * @param {string} artistName - artista (es. The Beatles)
  * @param {string} userId - ID utente Discord che ha avviato la partita
- * @throws {Error} Se l'URL di anteprima non è disponibile per la canzone selezionata
  */
-async function startGame(interaction, artistName, userId, mode = 'spotify') {
+async function startGame(interaction, artistName, userId) {
 
     // metto obbl per il momento la auth
     if (!spotify.isAuthenticated(userId)) {
@@ -80,111 +115,62 @@ async function startGame(interaction, artistName, userId, mode = 'spotify') {
         return interaction.editReply('Could not connect to voice channel! Check bot permissions.');
     }
 
-    if (mode === 'local') {
-        // non ci sono canzoni
-        if (localMusic.songs.length === 0) {
-            connection.destroy();
-            return interaction.editReply('No local songs available. Add some to the music folder.');
-        }
-        // preparo canzone + risorsa
-        const randomSong = localMusic.getRandomSong();
-        const resource = localMusic.createAudioResourceFromFile(randomSong.filePath);
-        if (!resource) return interaction.editReply('Error creating audio resource.');
-
-        // player
-        const player = createAudioPlayer();
-        player.play(resource);
-        connection.subscribe(player);
-
-        // Salva game state
-        const gameState = {
-            connection,
-            player,
-            currentSong: {
-                title: randomSong.name,
-                artist: 'Local',
-                source: 'local'
-            },
-            tracks: localMusic.songs,   // <- tutte le canzoni locali
-            userId,
-            scores: {},
-            playedTracks: [],
-            roundNumber: 1,
-            mode: 'local'
-        };
-        games.set(interaction.guildId, gameState);
-        await interaction.editReply(`Round 1 - Guess the song!`);
-        RoundHandler.startRound(interaction, module.exports, gameState);
-        return;
-    } else {
-        // ottengo l'artista 
-        const artist = await spotify.searchArtist(userId, artistName)
-        if (!artist) return interaction.editReply('Artist not found')
-
-        // ottengo le tracks
-        const tracks = await spotify.getArtistTopTracks(userId, artistName)
-        if (!tracks) return interaction.editReply('Error: didn\'t find any track for the artist')
-
-        // scelgo una track random
-        const track = tracks[Math.floor(Math.random() * tracks.length)];
-
-        // cerco la canzone con la funzione intelligente (prova Spotify prima di YouTube)
-        console.log('Searching for:', `${track.name} ${track.artists[0].name}`);
-        let audioStream;
-        try {
-            audioStream = await YouTube.createAudioStreamSmart(`${track.name} ${track.artists[0].name}`);
-        } catch (error) {
-            console.error('Failed to create audio stream:', error.message);
-            return interaction.editReply('No results found!');
-        }
-        if (!audioStream) return interaction.editReply('No results found!');
-
-        // streammo la canzone
-        const player = createAudioPlayer()
-
-        player.on('error', err => console.error('[Player Error]', err));
-        player.on('stateChange', (old, newState) => {
-            console.log(`[Player State] ${old.status} -> ${newState.status}`);
-        });
-        player.on(AudioPlayerStatus.Playing, () => console.log('Audio is playing!'));
-        player.on(AudioPlayerStatus.Idle, () => console.log('Audio idle'));
-
-        // creo risorsa audio con tipo corretto dallo stream
-        console.log('Creating audio resource with type:', audioStream.type.toString());
-        const resource = createAudioResource(audioStream.stream, {
-            inputType: audioStream.type,
-        });
-        console.log('Resource created, playing...');
-
-        player.play(resource)
-        connection.subscribe(player)
-        console.log('Player subscribed to connection');
-
-        await interaction.editReply(`Round 1 - Guess the song!`);
-
-        const guildId = interaction.guildId;
-
-        const gameState = {
-            connection,
-            player,
-            currentSong: {
-                title: track.name,
-                artist: track.artists[0].name,
-                source: audioStream.source,
-            },
-            tracks,
-            userId,
-            scores: {},
-            playedTracks: [],
-            roundNumber: 1,
-            mode: 'spotify'
-        };
-        games.set(guildId, gameState);
-
-        // per passarlo alla funzione startRound
-        // inizio il round
-        RoundHandler.startRound(interaction, module.exports, gameState)
+    // ottengo l'artista
+    const artist = await spotify.searchArtist(userId, artistName)
+    if (!artist) {
+        connection.destroy();
+        return interaction.editReply('Artist not found')
     }
+
+    // ottengo le tracks
+    const tracks = await spotify.getArtistTopTracks(userId, artistName)
+    if (!tracks) {
+        connection.destroy();
+        return interaction.editReply('Error: didn\'t find any track for the artist')
+    }
+
+    // scelgo una track random
+    const track = tracks[Math.floor(Math.random() * tracks.length)];
+
+    const audio = await resolveTrackAudio(track);
+    if (!audio) {
+        connection.destroy();
+        return interaction.editReply('No results found!');
+    }
+
+    // streammo la canzone
+    const player = createAudioPlayer()
+
+    player.on('error', err => console.error('[Player Error]', err));
+    player.on('stateChange', (old, newState) => {
+        console.log(`[Player State] ${old.status} -> ${newState.status}`);
+    });
+    player.on(AudioPlayerStatus.Playing, () => console.log('Audio is playing!'));
+    player.on(AudioPlayerStatus.Idle, () => console.log('Audio idle'));
+
+    player.play(audio.resource)
+    connection.subscribe(player)
+    console.log('Player subscribed to connection');
+
+    await interaction.editReply(`Round 1 - Guess the song!`);
+
+    const guildId = interaction.guildId;
+
+    const gameState = {
+        connection,
+        player,
+        currentSong: audio.currentSong,
+        tracks,
+        userId,
+        scores: {},
+        playedTracks: [track],   // il round 1 va tracciato subito, altrimenti nextRound può ripescarlo
+        roundNumber: 1,
+    };
+    games.set(guildId, gameState);
+
+    // per passarlo alla funzione startRound
+    // inizio il round
+    RoundHandler.startRound(interaction, module.exports, gameState)
 }
 
 
@@ -225,7 +211,7 @@ async function nextRound(interaction) {
 
     if (gameState.roundNumber >= 10) {
         // prendo la classifica
-        const scores = await database.getLeaderboard()
+        const scores = await database.getLeaderboard(guildId)
 
         const text = scores
             .map(([userId, points], i) => `${i + 1}. <@${userId}> — ${points} points`)
@@ -256,72 +242,37 @@ async function nextRound(interaction) {
     // la aggiungo a played tracks
     gameState.playedTracks.push(track)
 
-    if (gameState.mode === 'local') {
-        // stessa cosa di startGame
-        const resource = localMusic.createAudioResourceFromFile(track.filePath);
-        if (!resource) {
-            console.error('[nextRound] Error while creating resource for song');
-            return interaction.channel.send('Error loading next song.');
-        }
-        const player = createAudioPlayer();
-        player.play(resource);
-        gameState.connection.subscribe(player);
-        gameState.player = player;
-        gameState.currentSong = {
-            title: track.name,
-            artist: 'Local',
-            source: 'local'
-        };
-        gameState.roundNumber++;
-        await interaction.channel.send(`Round ${gameState.roundNumber} - Guess the song!`);
-        RoundHandler.startRound(interaction, module.exports, gameState);
-        return;
-    } else {
-        // MODALITÀ SPOTIFY
-        // cerco la canzone con la funzione intelligente (prova Spotify prima di YouTube)
-        console.log('Searching for:', `${track.name} ${track.artists[0].name}`);
-        let audioData;
-        try {
-            audioData = await YouTube.createAudioStreamSmart(`${track.name} ${track.artists[0].name}`);
-        } catch (error) {
-            console.error('Failed to create audio stream:', error.message);
-            return interaction.channel.send('No results found!');
-        }
-        if (!audioData) return interaction.channel.send('Impossible creating audio stream');
-        const player = createAudioPlayer();
-        const resource = createAudioResource(audioData.stream, {
-            inputType: audioData.type
-        });
+    const audio = await resolveTrackAudio(track);
+    if (!audio) return interaction.channel.send('No results found!');
 
-        player.play(resource);
-        gameState.connection.subscribe(player);
+    const player = createAudioPlayer();
+    player.play(audio.resource);
+    gameState.connection.subscribe(player);
 
-        // round + messaggio
-        gameState.roundNumber = (gameState.roundNumber || 0) + 1;
-        await interaction.channel.send(`Round ${gameState.roundNumber} - Guess the song!`)
+    // round + messaggio
+    gameState.roundNumber = (gameState.roundNumber || 0) + 1;
+    await interaction.channel.send(`Round ${gameState.roundNumber} - Guess the song!`)
 
-        gameState.currentSong = {
-            title: track.name,
-            artist: track.artists[0].name,
-            source: audioData.source,
-        };
+    gameState.currentSong = audio.currentSong;
+    gameState.player = player;
 
-        gameState.player = player;
-
-        // faccio ripartire il collector
-        RoundHandler.startRound(interaction, module.exports, gameState)
-    }
+    // faccio ripartire il collector
+    RoundHandler.startRound(interaction, module.exports, gameState)
 }
 
 
 /**
- * Controlla se la risposta dell'utente combacia con il nome della canzone corrente
- * Se corretta, assegna un punto all'utente; altrimenti restituisce false
- * @param {string} userId - ID utente Discord
+ * Controlla se la risposta dell'utente combacia con il nome della canzone corrente.
+ * Volutamente sincrona (nessun await, nessuna scrittura su db): RoundHandler la usa
+ * come lock atomico per evitare che due risposte corrette quasi simultanee vengano
+ * processate entrambe (assegnazione punto e nextRound() sono responsabilità del
+ * chiamante, una volta sola per round).
+ * @param {string} userId - ID utente Discord (solo per i log)
  * @param {string} guess - Risposta dell'utente per il nome della canzone
+ * @param {string} guildId - ID del server
  * @returns {boolean} True se la risposta è corretta, false altrimenti
  */
-async function checkGuess(userId, guess, guildId) {
+function isCorrectGuess(userId, guess, guildId) {
     const gameState = games.get(guildId)
     // controllo se c'è una partita in corso
     if (!gameState) return false
@@ -341,12 +292,11 @@ async function checkGuess(userId, guess, guildId) {
     const cleanGuess = clean(guess);
     const cleanToGuess = clean(toGuess);
 
-    console.log(`[checkGuess] User: ${userId}, Guess: "${guess}" → "${cleanGuess}", Expected: "${toGuess}" → "${cleanToGuess}"`);
+    console.log(`[isCorrectGuess] User: ${userId}, Guess: "${guess}" → "${cleanGuess}", Expected: "${toGuess}" → "${cleanToGuess}"`);
 
     // Controllo esatto ignorando punteggiatura
     if (cleanGuess === cleanToGuess) {
-        console.log('[checkGuess] Exact match!');
-        await database.addPoint(userId);
+        console.log('[isCorrectGuess] Exact match!');
         return true;
     }
 
@@ -355,12 +305,11 @@ async function checkGuess(userId, guess, guildId) {
     const mainTitle = cleanToGuess.split(/[-–—]/)[0].trim();
 
     if (cleanGuess === mainTitle) {
-        console.log('[checkGuess] Main title match!');
-        await database.addPoint(userId);
+        console.log('[isCorrectGuess] Main title match!');
         return true;
     }
 
-    console.log('[checkGuess] No match found');
+    console.log('[isCorrectGuess] No match found');
     return false;
 }
 
@@ -383,4 +332,4 @@ function getCurrentSong(guildId) {
 }
 
 
-module.exports = { startGame, stopGame, nextRound, checkGuess, getToGuess, getCurrentSong }
+module.exports = { startGame, stopGame, nextRound, isCorrectGuess, getToGuess, getCurrentSong }

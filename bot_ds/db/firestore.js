@@ -25,51 +25,77 @@ if (!admin.apps.length) { // Controllo per evitare doppie inizializzazioni
 const db = admin.firestore();
 const scoresCollection = db.collection('scores');
 
+
 /**
- * Aggiunge un punto al punteggio di un utente
+ * Metodo che ritorna l'id del documento combinando server e utente
  */
-async function addPoint(userId) {
-    const userRef = scoresCollection.doc(userId);
-    const doc = await userRef.get();
-
-    if (!doc.exists) {
-        // Nuovo utente
-        await userRef.set({
-            points: 1,
-            streak: 1,
-            maxStreak: 1
-        });
-    } else {
-        const data = doc.data();
-        const newStreak = (data.streak || 0) + 1;
-        const newMaxStreak = Math.max(newStreak, data.maxStreak || 0);
-
-        await userRef.update({
-            points: (data.points || 0) + 1,
-            streak: newStreak,
-            maxStreak: newMaxStreak
-        });
-    }
+function scoreDocId(guildId, userId) {
+    return `${guildId}_${userId}`
 }
 
 /**
- * Recupera il punteggio di un utente
+ * Aggiunge un punto al punteggio di un utente
  */
-async function getScore(userId) {
-    const doc = await scoresCollection.doc(userId).get();
+async function addPoint(userId, guildId) {
+    const userRef = scoresCollection.doc(scoreDocId(guildId, userId));
+
+    await db.runTransaction(async (transaction) => {
+        const doc = await transaction.get(userRef);
+
+        if (!doc.exists) {
+            transaction.set(userRef, {
+                userId, guildId,
+                points: 1, streak: 1, maxStreak: 1
+            });
+        } else {
+            const data = doc.data();
+            const newStreak = (data.streak || 0) + 1;
+            const newMaxStreak = Math.max(newStreak, data.maxStreak || 0);
+            
+            transaction.update(userRef, {
+                points: (data.points || 0) + 1,
+                streak: newStreak,
+                maxStreak: newMaxStreak
+            });
+        }
+    });
+}
+
+
+/**
+ * Recupera il punteggio di un utente in un server
+ */
+async function getScore(userId, guildId) {
+    const doc = await scoresCollection.doc(scoreDocId(guildId, userId)).get();
     return doc.exists ? (doc.data().points || 0) : 0;
 }
 
 /**
- * Recupera la leaderboard ordinata
+ * Recupera la leaderboard di un singolo server, ordinata per punti
  */
-async function getLeaderboard() {
-    const snapshot = await scoresCollection.orderBy('points', 'desc').get();
+async function getLeaderboard(guildId) {
+    const snapshot = await scoresCollection
+        .where('guildId', '==', guildId)
+        .orderBy('points', 'desc')
+        .get();
     const leaderboard = [];
     snapshot.forEach(doc => {
-        leaderboard.push([doc.id, doc.data().points || 0]);
+        leaderboard.push([doc.data().userId, doc.data().points || 0]);
     });
     return leaderboard;
+}
+
+/**
+ * Recupera la leaderboard globale: somma i punti per utente su tutti i server
+ */
+async function getGlobalLeaderboard() {
+    const snapshot = await scoresCollection.get();
+    const totals = new Map();
+    snapshot.forEach(doc => {
+        const { userId, points } = doc.data();
+        totals.set(userId, (totals.get(userId) || 0) + (points || 0));
+    });
+    return [...totals.entries()].sort((a, b) => b[1] - a[1]);
 }
 
 /**
@@ -97,26 +123,26 @@ function getBadge(points) {
 }
 
 /**
- * Recupera lo streak di un utente
+ * Recupera lo streak di un utente in un server
  */
-async function getStreak(userId) {
-    const doc = await scoresCollection.doc(userId).get();
+async function getStreak(userId, guildId) {
+    const doc = await scoresCollection.doc(scoreDocId(guildId, userId)).get();
     return doc.exists ? (doc.data().streak || 0) : 0;
 }
 
 /**
- * Recupera il max streak di un utente
+ * Recupera il max streak di un utente in un server
  */
-async function getMaxStreak(userId) {
-    const doc = await scoresCollection.doc(userId).get();
+async function getMaxStreak(userId, guildId) {
+    const doc = await scoresCollection.doc(scoreDocId(guildId, userId)).get();
     return doc.exists ? (doc.data().maxStreak || 0) : 0;
 }
 
 /**
- * Azzera lo streak di un utente
+ * Azzera lo streak di un utente in un server
  */
-async function resetStreak(userId) {
-    await scoresCollection.doc(userId).update({ streak: 0 });
+async function resetStreak(userId, guildId) {
+    await scoresCollection.doc(scoreDocId(guildId, userId)).update({ streak: 0 });
 }
 
 /**
@@ -164,17 +190,18 @@ async function updateAccessToken(userId, newAccessToken, expiresIn) {
     });
 }
 
-module.exports = { 
-    addPoint, 
-    getScore, 
-    getLeaderboard, 
-    resetScores, 
-    getBadge, 
-    getStreak, 
-    getMaxStreak, 
-    resetStreak, 
-    saveTokens, 
-    getTokens, 
-    deleteTokens, 
+module.exports = {
+    addPoint,
+    getScore,
+    getLeaderboard,
+    getGlobalLeaderboard,
+    resetScores,
+    getBadge,
+    getStreak,
+    getMaxStreak,
+    resetStreak,
+    saveTokens,
+    getTokens,
+    deleteTokens,
     updateAccessToken,
 };

@@ -3,9 +3,10 @@
  * Comandi: quiz_start, quiz_stop, quiz_skip, leaderboard
  */
 
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const database = require('../db/firestore');
 const GameManager = require('../game/GameManager');
+const { buildLeaderboardCard, buildStatsCard, buildStreakCard } = require('../game/statsUI');
 
 
 // lista comandi
@@ -111,21 +112,33 @@ const commands = [
          */
         data: new SlashCommandBuilder()
             .setName('leaderboard')
-            .setDescription('Shows the leaderboard'),
+            .setDescription('Shows the leaderboard')
+            .addBooleanOption(option =>
+                option
+                .setName('global')
+                .setDescription('Global leaderboard')
+                .setRequired(false)
+            ),
         
         async execute(interaction) {
-            const leaderboard = await database.getLeaderboard();
-            if (!leaderboard.length) return interaction.editReply('No scores yet!');
-            
-            // formattazione carina fatta 
-            const text = leaderboard
-            .map(([userId, points], i) => {
-                const badge = database.getBadge(points);
-                return `${i + 1}. <@${userId}> — ${points} points ${badge.emoji} **${badge.name}**`;
-            })
-            .join('\n');
+            await interaction.deferReply();
 
-            interaction.editReply(`🏆 **Leaderboard**\n${text}`);
+            const global = interaction.options.getBoolean('global') ?? false;
+            const leaderboard = global
+                ? await database.getGlobalLeaderboard()
+                : await database.getLeaderboard(interaction.guildId);
+            if (!leaderboard.length) return interaction.editReply('No scores yet!');
+
+            const entries = leaderboard.map(([userId, points]) => ({
+                userId,
+                points,
+                badge: database.getBadge(points),
+            }));
+
+            interaction.editReply({
+                components: [buildLeaderboardCard(entries)],
+                flags: MessageFlags.IsComponentsV2,
+            });
         }
 
     },
@@ -139,57 +152,47 @@ const commands = [
             .setDescription('Shows your stats'),
         
         async execute(interaction) {
+            await interaction.deferReply();
+
             // prendo id
             const userId = interaction.user.id;
+            const guildId = interaction.guildId;
             // punti
-            const points = await database.getScore(userId);
+            const points = await database.getScore(userId, guildId);
             // calcolo il badge in base ai punti
             const badge = database.getBadge(points);
-            
-            // calcolo il rank nella classifica
-            const leaderboard = await database.getLeaderboard();
+
+            // calcolo il rank nella classifica (di questo server)
+            const leaderboard = await database.getLeaderboard(guildId);
             const rank = leaderboard.findIndex(([id]) => id === userId) + 1;
 
             // streak
-            const streak = await database.getStreak(userId);
-            const maxStreak = await database.getMaxStreak(userId);
+            const streak = await database.getStreak(userId, guildId);
+            const maxStreak = await database.getMaxStreak(userId, guildId);
 
-            // piccoli calcoli per la nextTier e i punti per arrivarci
-            const nextTierPoints = [5, 10, 20, 50, 100, Infinity];
-            const currentTierIndex = [0, 5, 10, 20, 50].findIndex(p => points < p);
-            const nextTier = nextTierPoints[currentTierIndex];
-            const pointsToNext = nextTier - points;
+            // prossima soglia di tier: la prima nella lista che è ancora sopra i punti attuali
+            const tierThresholds = [5, 10, 20, 50, 100];
+            const nextTier = tierThresholds.find(t => points < t) ?? Infinity;
+            const pointsToNext = Number.isFinite(nextTier) ? nextTier - points : 0;
 
-            // output
-            const statsText = `
-            📊 **Your Personal Stats**
-            ═══════════════════
-            👤 Player: <@${userId}>
-            🏅 Rank: #${rank} of ${leaderboard.length}
-            ⭐ Points: ${points}
-            🔥 Current Streak: ${streak}
-            🏆 Best Streak: ${maxStreak}
-            🎖️ Badge: ${badge.emoji} **${badge.name}** (Tier ${badge.tier})
-            📈 Progress: ${points}/${nextTier} pts
-            🎯 Next tier: +${pointsToNext} points
-            `;
-
-            // progressbar carina
-            const progressPercentage = Math.round((points / nextTier) * 10);
-            const filled = '█'.repeat(progressPercentage);
-            const empty = '░'.repeat(10 - progressPercentage);
-            // mi calcolo la perc
-            const progressBar = `[${filled}${empty}] ${Math.round((points / nextTier) * 100)}%`;
-
-            // aggiungo anche la statsbar
-            const finalStats = `${statsText}
-            ${progressBar}
-            `;
-
-            interaction.editReply(finalStats);        
+            interaction.editReply({
+                components: [buildStatsCard({
+                    userId,
+                    avatarURL: interaction.user.displayAvatarURL(),
+                    points,
+                    badge,
+                    rank,
+                    total: leaderboard.length,
+                    streak,
+                    maxStreak,
+                    nextTier,
+                    pointsToNext,
+                })],
+                flags: MessageFlags.IsComponentsV2,
+            });
         }
 
-    }, 
+    },
     {
         /**
          * Comando Streak
@@ -200,22 +203,22 @@ const commands = [
             .setDescription('Shows your actual streak and your record'),
         
         async execute(interaction) {
+            await interaction.deferReply();
+
             // prendo id
             const userId = interaction.user.id;
+            const guildId = interaction.guildId;
             // streak
-            const streak = await database.getStreak(userId);
-            const maxStreak = await database.getMaxStreak(userId);
+            const streak = await database.getStreak(userId, guildId);
+            const maxStreak = await database.getMaxStreak(userId, guildId);
 
-            // output
-            const streakOutp = `
-            Your Current Streak: ${streak}
-            Your Best Streak: ${maxStreak}
-            `;
-
-            interaction.editReply(streakOutp);        
+            interaction.editReply({
+                components: [buildStreakCard({ userId, streak, maxStreak })],
+                flags: MessageFlags.IsComponentsV2,
+            });
         }
 
-    }, 
+    },
 ];
 
 module.exports = commands;

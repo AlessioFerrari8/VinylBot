@@ -19,6 +19,13 @@ async function startRound(interaction, gameManager, gameState) {
     // aspetto che qualcuno scriva in chat per 30 sec
     const collector = interaction.channel.createMessageCollector({ time: 30000 })
 
+    // lock del round: due risposte corrette quasi simultanee arrivano entrambe fino a
+    // qui prima che la prima abbia finito di processarsi, se il controllo fosse
+    // asincrono. isCorrectGuess() e' sincrona apposta, quindi il blocco che va dal
+    // controllo di roundEnded al settaggio a true gira tutto d'un fiato, senza await
+    // in mezzo: la seconda risposta la trova gia' true.
+    let roundEnded = false;
+
     // HINT
     const hintTimeout = setTimeout(() => {
         const currentSong = gameManager.getCurrentSong(guildId)
@@ -36,6 +43,7 @@ async function startRound(interaction, gameManager, gameState) {
     // messaggi ricevuti
     collector.on('collect', async message => {
         if (message.author.bot) return // ignoro bot
+        if (roundEnded) return // qualcun altro ha gia' indovinato in questo round
 
         // id utente e la sua guess
         const userId = message.author.id
@@ -43,23 +51,28 @@ async function startRound(interaction, gameManager, gameState) {
 
         console.log(`[RoundHandler] Collected message from ${userId}: "${guess}"`);
 
-        // controllo se ha indovinato
-        const correct = await gameManager.checkGuess(userId, guess, guildId);
+        // controllo sincrono, nessun await prima del lock: se due persone rispondono
+        // giusto quasi insieme, solo la prima arriva a settare roundEnded
+        const correct = gameManager.isCorrectGuess(userId, guess, guildId);
 
-        // indovinato
-        if (correct) {
-            console.log(`[RoundHandler] CORRECT answer from ${userId}!`);
-            // fermo il collector e mando ack
-            collector.stop('correct');
-            const currentSong = gameManager.getCurrentSong(guildId);
-            if (currentSong) {                    
-                interaction.channel.send(`The song was guessed by <@${userId}> **${currentSong.title}** by *${currentSong.artist}*`);
-            }
-            // vado al prossimo round
-            await gameManager.nextRound(interaction); 
-        } else {
+        if (!correct) {
             console.log(`[RoundHandler] INCORRECT answer from ${userId}: "${guess}"`);
+            return;
         }
+
+        // lock: da qui in poi qualsiasi altro 'collect' concorrente trova roundEnded true
+        roundEnded = true;
+        collector.stop('correct');
+
+        console.log(`[RoundHandler] CORRECT answer from ${userId}!`);
+        await database.addPoint(userId, guildId);
+
+        const currentSong = gameManager.getCurrentSong(guildId);
+        if (currentSong) {
+            interaction.channel.send(`The song was guessed by <@${userId}> **${currentSong.title}** by *${currentSong.artist}*`);
+        }
+        // vado al prossimo round
+        await gameManager.nextRound(interaction);
     });
 
     collector.on('end', async (collected, reason) => {
@@ -74,7 +87,7 @@ async function startRound(interaction, gameManager, gameState) {
         if (reason !== 'correct' && reason !== 'stopped' && reason !== 'new_round_started') {
             const losers = [...new Set(collected.map(m => m.author.id))];
             for (const id of losers) {
-                await database.resetStreak(id);
+                await database.resetStreak(id, guildId);
             }
             
             const toGuess = gameManager.getToGuess(guildId);

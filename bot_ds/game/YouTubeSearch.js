@@ -510,26 +510,27 @@ async function getInvidiousAudioUrl(videoId) {
 }
 
 /**
- * Crea uno stream audio intelligente:
- * 1. Prova Spotify (NO bot detection, sempre 30 sec)
- * 2. Se fallisce, tenta YouTube/play-dl
- * 3. Se YouTube fallisce per bot detection, prova Invidious (NO bot detection)
- * 4. Ultimo fallback: yt-dlp con cookies
- * 
+ * Crea uno stream audio intelligente. Prova sempre Spotify preview per primo
+ * (nessun bot detection, funziona ovunque). Da lì la catena dipende da DEPLOY_ENV:
+ * - "vps": si ferma dopo Spotify e lancia NO_LOCAL_STREAM — YouTube non funziona
+ *   da datacenter, quindi GameManager intercetta l'errore e ripiega sui file locali.
+ * - altrimenti (locale): YouTube/play-dl, poi Invidious, poi yt-dlp con cookies.
+ *
  * @param {string} query - Nome della canzone/artista da cercare
  * @returns {Promise<{stream, type, source}>} Stream audio pronto per Discord
  */
 async function createAudioStreamSmart(query) {
     const { StreamType } = require('@discordjs/voice');
+    const isVps = process.env.DEPLOY_ENV === 'vps';
 
     console.log('\n[Audio Stream Smart] Tentando di trovare:', query);
 
-    // PRIMO TENTATIVO: Spotify (più affidabile, 30 sec preview, NO bot detection)
+    // tentativo 1: spotify preview sia in locale che su deploy su vps o server
     console.log('[Audio Stream Smart] Tentativo 1: Spotify preview...');
     try {
         const spotifyTrack = await searchSpotifyTrack(query);
         if (spotifyTrack && spotifyTrack.preview_url) {
-            console.log('[Audio Stream Smart] ✅ Found on Spotify:', spotifyTrack.name);
+            console.log('[Audio Stream Smart] Found on Spotify:', spotifyTrack.name);
             const stream = await createAudioStreamFromSpotifyPreview(spotifyTrack.preview_url);
             return {
                 ...stream,
@@ -537,71 +538,78 @@ async function createAudioStreamSmart(query) {
                 metadata: spotifyTrack
             };
         } else {
-            console.warn('[Audio Stream Smart] ⚠️ Spotify: No preview available');
+            console.warn('[Audio Stream Smart] Spotify: No preview available');
         }
     } catch (spotifyError) {
-        console.warn('[Audio Stream Smart] ⚠️ Spotify failed:', spotifyError.message);
+        console.warn('[Audio Stream Smart] Spotify failed:', spotifyError.message);
     }
 
-    // SECONDO TENTATIVO: YouTube/play-dl
-    console.log('[Audio Stream Smart] Tentativo 2: YouTube (play-dl)...');
-    try {
-        const youtubeVideo = await searchSong(query);
-        if (youtubeVideo && youtubeVideo.url) {
-            console.log('[Audio Stream Smart] ✅ Found on YouTube:', youtubeVideo.title);
-            const stream = await createAudioStream(youtubeVideo.url);
-            return {
-                ...stream,
-                source: 'youtube',
-                metadata: youtubeVideo
-            };
-        }
-    } catch (ytError) {
-        console.warn('[Audio Stream Smart] ⚠️ YouTube failed:', ytError.message);
-    }
-
-    // TERZO TENTATIVO: Invidious (NO bot detection!)
-    console.log('[Audio Stream Smart] Tentativo 3: Invidious (no bot detection)...');
-    try {
-        const youtubeVideo = await searchSong(query);
-        if (youtubeVideo && youtubeVideo.url) {
-            const urlObj = new URL(youtubeVideo.url);
-            const videoId = urlObj.searchParams.get('v');
-            if (videoId) {
-                console.log('[Audio Stream Smart] Trying Invidious for:', videoId);
-                const audioUrl = await getInvidiousAudioUrl(videoId);
-                console.log('[Audio Stream Smart] Got Invidious URL, creating stream...');
-                const stream = await createAudioStreamFromURL(audioUrl, 20);
-                console.log('[Audio Stream Smart] ✅ Stream creato con Invidious!');
+    // secondo tentativo in base a piattaforma
+    if(isVps) {
+        // non ha senso provare yt, non funziona
+        throw new Error('NO_LOCAL_STREAM'); // passo ai file locali
+    } else { // provo tutti gli altri
+        // YouTube/play-dl
+        console.log('[Audio Stream Smart] Tentativo 2: YouTube (play-dl)...');
+        try {
+            const youtubeVideo = await searchSong(query);
+            if (youtubeVideo && youtubeVideo.url) {
+                console.log('[Audio Stream Smart] Found on YouTube:', youtubeVideo.title);
+                const stream = await createAudioStream(youtubeVideo.url);
                 return {
                     ...stream,
-                    source: 'invidious',
+                    source: 'youtube',
                     metadata: youtubeVideo
                 };
             }
+        } catch (ytError) {
+            console.warn('[Audio Stream Smart] YouTube failed:', ytError.message);
         }
-    } catch (invidiousError) {
-        console.warn('[Audio Stream Smart] ⚠️ Invidious failed:', invidiousError.message);
+    
+        // Invidious 
+        console.log('[Audio Stream Smart] Tentativo 3: Invidious (no bot detection)...');
+        try {
+            const youtubeVideo = await searchSong(query);
+            if (youtubeVideo && youtubeVideo.url) {
+                const urlObj = new URL(youtubeVideo.url);
+                const videoId = urlObj.searchParams.get('v');
+                if (videoId) {
+                    console.log('[Audio Stream Smart] Trying Invidious for:', videoId);
+                    const audioUrl = await getInvidiousAudioUrl(videoId);
+                    console.log('[Audio Stream Smart] Got Invidious URL, creating stream...');
+                    const stream = await createAudioStreamFromURL(audioUrl, 20);
+                    console.log('[Audio Stream Smart] Stream creato con Invidious!');
+                    return {
+                        ...stream,
+                        source: 'invidious',
+                        metadata: youtubeVideo
+                    };
+                }
+            }
+        } catch (invidiousError) {
+            console.warn('[Audio Stream Smart] Invidious failed:', invidiousError.message);
+        }
+    
+        // yt-dlp 
+        console.log('[Audio Stream Smart] Tentativo 4: yt-dlp diretto...');
+        try {
+            const youtubeVideo = await searchSong(query);
+            if (youtubeVideo && youtubeVideo.url) {
+                const stream = await createAudioStreamYtdlp(youtubeVideo.url);
+                return {
+                    ...stream,
+                    source: 'yt-dlp',
+                    metadata: youtubeVideo
+                };
+            }
+        } catch (ytdlpError) {
+            console.warn('[Audio Stream Smart] yt-dlp failed:', ytdlpError.message);
+        }
+    
+        console.error('[Audio Stream Smart] Tutti i metodi falliti!');
+        throw new Error('Impossibile trovare la canzone su nessuna piattaforma');
     }
 
-    // QUARTO TENTATIVO: yt-dlp diretto
-    console.log('[Audio Stream Smart] Tentativo 4: yt-dlp diretto...');
-    try {
-        const youtubeVideo = await searchSong(query);
-        if (youtubeVideo && youtubeVideo.url) {
-            const stream = await createAudioStreamYtdlp(youtubeVideo.url);
-            return {
-                ...stream,
-                source: 'yt-dlp',
-                metadata: youtubeVideo
-            };
-        }
-    } catch (ytdlpError) {
-        console.warn('[Audio Stream Smart] ⚠️ yt-dlp failed:', ytdlpError.message);
-    }
-
-    console.error('[Audio Stream Smart] Tutti i metodi falliti!');
-    throw new Error('Impossibile trovare la canzone su nessuna piattaforma');
 }
 
 
