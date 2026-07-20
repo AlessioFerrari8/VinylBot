@@ -11,6 +11,7 @@
 require('dotenv').config();
 const spotify = require('./spotify/client');
 const { MessageFlags } = require('discord.js');
+const { buildPlayerCard } = require('./spotify/playerUI');
 
 
 // Load environment variables
@@ -215,6 +216,59 @@ async function registerCommands() {
   await rest.put(route, { body: commands });
   console.log('Commands registered');
 }
+
+// handler bottoni player
+client.on('interactionCreate', async (interaction) => {
+
+  if (interaction.isButton() && interaction.customId.startsWith('player:')) {
+    const [, action, ownerId] = interaction.customId.split(':');
+
+    // solo il proprietario del player può usarlo
+    if (interaction.user.id !== ownerId) {
+      return interaction.reply({ content: "This isn't your player!", flags: MessageFlags.Ephemeral })
+    }
+
+    try {
+      // ack subito: le chiamate a Spotify possono sforare i 3s concessi da Discord
+      await interaction.deferUpdate();
+
+      let res;
+      if (action === 'skip') res = await spotify.skip(ownerId);
+      else if (action === 'previous') res = await spotify.previous(ownerId);
+      else if (action === 'toggle') {
+        // guardo stato attuale
+        const now = await spotify.nowPlaying(ownerId)
+        if (!now.success) {
+          return interaction.followUp({ content: `Error: ${now.message}`, flags: MessageFlags.Ephemeral });
+        }
+        if (now.isPlaying) await spotify.pause(ownerId); else await spotify.resume(ownerId)
+        // riuso lo stato già letto invertendo isPlaying: risparmio una chiamata API
+        res = { ...now, isPlaying: !now.isPlaying }
+      } else if (action === 'voldown' || action === 'volup') {
+        const vol = await spotify.getVolume(ownerId);
+        if (!vol.success) {
+          return interaction.followUp({ content: `Error: ${vol.message}`, flags: MessageFlags.Ephemeral });
+        }
+        // aggiungo o tolgo 10 al volume
+        const next = Math.max(0, Math.min(100, vol.volume + (action === 'volup' ? 10 : -10)))
+        await spotify.setVolume(ownerId, next)
+        res = await spotify.nowPlaying(ownerId)
+      }
+      if (!res?.success) {
+        return interaction.followUp({ content: `Error: ${res?.message ?? 'something went wrong'}`, flags: MessageFlags.Ephemeral });
+      }
+
+      // aggiorno messaggio del player (niente nuovo messaggio)
+      return interaction.editReply({
+        components: [buildPlayerCard(res.track, { isPlaying: res.isPlaying, requestedBy: ownerId })],
+      });
+    } catch (error) {
+       console.error(error)
+       const msg = { content: 'Error!', flags: MessageFlags.Ephemeral };
+       return interaction.deferred ? interaction.followUp(msg) : interaction.reply(msg);
+    }
+  }
+})
 
 // Effettua il login su Discord (registerCommands() viene chiamato nel clientReady event)
 client.login(process.env.DISCORD_TOKEN);

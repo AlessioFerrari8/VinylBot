@@ -241,6 +241,20 @@ async function setVolume(userId, volume) {
 }
 
 /**
+ * Legge il volume attuale
+ * @param {string} userId 
+ * @returns {Promise<Object>} un oggetto con `success` e `volume`
+ */
+async function getVolume(userId) {
+    const api = await apiForUser(userId)
+    const data = await api.getMyCurrentPlaybackState()
+    if (!data.body || !data.body.device) return { success: false, message: 'No active device.'}
+    // metto 50 nel caso fosse null
+    return { success: true, volume: data.body.device.volume_percent ?? 50}
+}
+
+
+/**
  * Restituisce informazioni sulla canzone attualmente in riproduzione.
  * 
  * @param {string} userId - L'ID dell'utente Discord
@@ -307,4 +321,4 @@ async function getArtistTopTracks(userId, artistName) {
     return result.body.tracks.items;
 }
 
-module.exports = { getAuthUrl, handleCallback, isAuthenticated, logout, play, pause, resume, skip, previous, setVolume, nowPlaying, apiForUser, getArtistTopTracks, searchArtist };
+module.exports = { getAuthUrl, handleCallback, isAuthenticated, logout, play, pause, resume, skip, previous, setVolume, getVolume, nowPlaying, apiForUser, getArtistTopTracks, searchArtist };
