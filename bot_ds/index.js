@@ -182,6 +182,20 @@ app.get('/callback', async (req, res) => {
   }
 });
 
+/**
+ * Endpoint di health check per la pagina /status del sito
+ * Riporta lo stato reale della connessione a Discord, non solo che il server è vivo
+ * @route GET /health
+ */
+app.get('/health', (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*'); // la fetch parte dal dominio del sito
+  res.json({
+    status: client.isReady() ? 'online' : 'degraded',
+    ping: client.ws.ping,       // latenza websocket verso Discord (ms, -1 se non ancora misurata)
+    uptime: process.uptime(),   // secondi da quando il processo è partito
+  });
+});
+
 // ascolto su tutte le interfacce
 app.listen(process.env.PORT || 8888, '0.0.0.0', () => {
   console.log(`Server listening on http://0.0.0.0:${process.env.PORT || 8888}`);
