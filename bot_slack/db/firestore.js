@@ -1,8 +1,8 @@
 // db/firestore.js
+// Stesso progetto Firebase del bot Discord: i doc id sono namespaced per workspace/utente
+// (teamId Slack vs guildId Discord non collidono mai), quindi condividere la collection è sicuro.
 const admin = require('firebase-admin');
 
-
-// Leggi le credenziali da variabile d'ambiente (per Railway) o da file (per locale)
 let serviceAccount;
 if (process.env.FIREBASE_CREDENTIALS) {
     try {
@@ -11,77 +11,87 @@ if (process.env.FIREBASE_CREDENTIALS) {
         console.error("Error while parsing FIREBASE_CREDENTIALS:", e);
     }
 } else {
-    // Caricamento locale 
     serviceAccount = require('../vinylbot-55b21-firebase-adminsdk-fbsvc-3742d0f090.json');
 }
 
-
-if (!admin.apps.length) { // Controllo per evitare doppie inizializzazioni
+if (!admin.apps.length) {
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
     });
 }
 
 const db = admin.firestore();
-const scoresCollection = db.collection('scores');
+const scoresCollection = db.collection('slack_scores');
 
 /**
- * Aggiunge un punto al punteggio di un utente
+ * Id documento combinando workspace (teamId) e utente
  */
-async function addPoint(userId) {
-    const userRef = scoresCollection.doc(userId);
-    const doc = await userRef.get();
-
-    if (!doc.exists) {
-        // Nuovo utente
-        await userRef.set({
-            points: 1,
-            streak: 1,
-            maxStreak: 1
-        });
-    } else {
-        const data = doc.data();
-        const newStreak = (data.streak || 0) + 1;
-        const newMaxStreak = Math.max(newStreak, data.maxStreak || 0);
-
-        await userRef.update({
-            points: (data.points || 0) + 1,
-            streak: newStreak,
-            maxStreak: newMaxStreak
-        });
-    }
+function scoreDocId(teamId, userId) {
+    return `${teamId}_${userId}`;
 }
 
 /**
- * Recupera il punteggio di un utente
+ * Aggiunge un punto al punteggio di un utente in un workspace (transazione atomica)
  */
-async function getScore(userId) {
-    const doc = await scoresCollection.doc(userId).get();
+async function addPoint(userId, teamId) {
+    const userRef = scoresCollection.doc(scoreDocId(teamId, userId));
+
+    await db.runTransaction(async (transaction) => {
+        const doc = await transaction.get(userRef);
+
+        if (!doc.exists) {
+            transaction.set(userRef, {
+                userId, teamId,
+                points: 1, streak: 1, maxStreak: 1
+            });
+        } else {
+            const data = doc.data();
+            const newStreak = (data.streak || 0) + 1;
+            const newMaxStreak = Math.max(newStreak, data.maxStreak || 0);
+
+            transaction.update(userRef, {
+                points: (data.points || 0) + 1,
+                streak: newStreak,
+                maxStreak: newMaxStreak
+            });
+        }
+    });
+}
+
+/**
+ * Recupera il punteggio di un utente in un workspace
+ */
+async function getScore(userId, teamId) {
+    const doc = await scoresCollection.doc(scoreDocId(teamId, userId)).get();
     return doc.exists ? (doc.data().points || 0) : 0;
 }
 
 /**
- * Recupera la leaderboard ordinata
+ * Recupera la leaderboard di un singolo workspace, ordinata per punti
  */
-async function getLeaderboard() {
-    const snapshot = await scoresCollection.orderBy('points', 'desc').get();
+async function getLeaderboard(teamId) {
+    const snapshot = await scoresCollection
+        .where('teamId', '==', teamId)
+        .orderBy('points', 'desc')
+        .get();
     const leaderboard = [];
     snapshot.forEach(doc => {
-        leaderboard.push([doc.id, doc.data().points || 0]);
+        leaderboard.push([doc.data().userId, doc.data().points || 0]);
     });
     return leaderboard;
 }
 
 /**
- * Azzera tutti i punteggi
+ * Recupera la leaderboard globale: somma i punti per utente su tutti i workspace
  */
-async function resetScores() {
+async function getGlobalLeaderboard() {
     const snapshot = await scoresCollection.get();
-    const batch = db.batch();
+    const totals = new Map();
     snapshot.forEach(doc => {
-        batch.delete(doc.ref);
+        const { userId, points } = doc.data();
+        totals.set(userId, (totals.get(userId) || 0) + (points || 0));
     });
-    await batch.commit();
+    return [...totals.entries()].sort((a, b) => b[1] - a[1]);
 }
 
 /**
@@ -97,84 +107,37 @@ function getBadge(points) {
 }
 
 /**
- * Recupera lo streak di un utente
+ * Recupera lo streak di un utente in un workspace
  */
-async function getStreak(userId) {
-    const doc = await scoresCollection.doc(userId).get();
+async function getStreak(userId, teamId) {
+    const doc = await scoresCollection.doc(scoreDocId(teamId, userId)).get();
     return doc.exists ? (doc.data().streak || 0) : 0;
 }
 
 /**
- * Recupera il max streak di un utente
+ * Recupera il max streak di un utente in un workspace
  */
-async function getMaxStreak(userId) {
-    const doc = await scoresCollection.doc(userId).get();
+async function getMaxStreak(userId, teamId) {
+    const doc = await scoresCollection.doc(scoreDocId(teamId, userId)).get();
     return doc.exists ? (doc.data().maxStreak || 0) : 0;
 }
 
 /**
- * Azzera lo streak di un utente
+ * Azzera lo streak di un utente in un workspace
  */
-async function resetStreak(userId) {
-    await scoresCollection.doc(userId).update({ streak: 0 });
+async function resetStreak(userId, teamId) {
+    // set+merge invece di update: un utente che sbaglia la primissima risposta
+    // non ha ancora un documento, update() fallirebbe con NOT_FOUND
+    await scoresCollection.doc(scoreDocId(teamId, userId)).set({ userId, teamId, streak: 0 }, { merge: true });
 }
 
-/**
- * 
- * @param {*} userId 
- * @param {*} data 
- * @returns 
- */
-async function saveTokens(userId, data) {
-    console.log(`[Firestore] Saving tokens for user ${userId}`);
-    await db.collection('spotify_tokens').doc(userId).set(data);
-}
-
-/**
- * @param {*} userId 
- * @returns
- */
-async function getTokens(userId) {
-    const doc = await db.collection('spotify_tokens').doc(userId).get();
-    if (doc.exists) {
-        return doc.data(); // ritorno i token
-    }
-    return null;
-}
-
-/**
- * 
- * @param {*} userId 
- */
-async function deleteTokens(userId) {
-    await db.collection('spotify_tokens').doc(userId).delete();
-}
-
-/**
- * 
- * @param {*} userId 
- * @param {*} newAccessToken 
- * @param {*} expiresIn 
- */
-async function updateAccessToken(userId, newAccessToken, expiresIn) {
-    const expiresAt = Date.now() + (expiresIn * 1000);
-    await db.collection('spotify_tokens').doc(userId).update({
-        accessToken: newAccessToken,
-        expiresAt: expiresAt
-    });
-}
-
-module.exports = { 
-    addPoint, 
-    getScore, 
-    getLeaderboard, 
-    resetScores, 
-    getBadge, 
-    getStreak, 
-    getMaxStreak, 
-    resetStreak, 
-    saveTokens, 
-    getTokens, 
-    deleteTokens, 
-    updateAccessToken,
+module.exports = {
+    addPoint,
+    getScore,
+    getLeaderboard,
+    getGlobalLeaderboard,
+    getBadge,
+    getStreak,
+    getMaxStreak,
+    resetStreak,
 };
