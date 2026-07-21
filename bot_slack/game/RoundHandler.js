@@ -1,103 +1,107 @@
+/**
+ * Modulo RoundHandler - Gestisce un round di indovinelli su Slack: niente message
+ * collector nativo come in discord.js, quindi teniamo lo stato del round attivo per
+ * canale e lo confrontiamo coi messaggi che arrivano dal listener globale in index.js.
+ */
+
 const database = require('../db/firestore');
-const { EmbedBuilder } = require('discord.js');
 
+/** @type {Map<string, Object>} Round attivi per canale Slack */
+const activeRounds = new Map();
 
-/** @type {*} Memorizza il collector di messaggi corrente per questo round */
-const activeCollectors = new Map();
+const ROUND_MS = 30000;
+const HINT_MS = 15000;
+
 /**
- * Avvia un nuovo round raccogliendo le risposte dei giocatori per 30 secondi
- * @param {Object} interaction - Oggetto interaction di Discord
- * @param {Object} gameManager - Istanza di GameManager per controllare le risposte e gestire il prossimo round
+ * Avvia un nuovo round: 30 secondi per rispondere, hint dopo 15.
+ * @param {Object} params - { client, channelId, gameManager, gameState }
  */
-async function startRound(interaction, gameManager, gameState) {
-    const guildId = interaction.guildId;
+function startRound({ client, channelId, gameManager, gameState }) {
+    stopRound(channelId); // nel caso fosse rimasto un round precedente
 
-    // Se c'è già un collector per questo server, fermalo prima di iniziarne uno nuovo
-    if (activeCollectors.has(guildId)) {
-        activeCollectors.get(guildId).stop('new_round_started');
-    }
-    // aspetto che qualcuno scriva in chat per 30 sec
-    const collector = interaction.channel.createMessageCollector({ time: 30000 })
+    const round = {
+        roundEnded: false,
+        guessers: new Set(),
+    };
 
-    // HINT
-    const hintTimeout = setTimeout(() => {
-        const currentSong = gameManager.getCurrentSong(guildId)
-        if (currentSong) {
-            const title = currentSong.title;
-            const hint = title
-                .split(' ')
-                .map(w => w[0] + '\\_'.repeat(w.length - 1))
-                .join(' ');
-            
-            interaction.channel.send(`💡 **Hint:** ${hint}`);
+    round.hintTimeout = setTimeout(() => {
+        const currentSong = gameManager.getCurrentSong(channelId);
+        if (!currentSong) return;
+        const hint = currentSong.title
+            .split(' ')
+            .map(w => w[0] + '\\_'.repeat(Math.max(w.length - 1, 0)))
+            .join(' ');
+        client.chat.postMessage({ channel: channelId, text: `💡 *Hint:* ${hint}` });
+    }, HINT_MS);
+
+    round.endTimeout = setTimeout(async () => {
+        if (round.roundEnded) return;
+        round.roundEnded = true;
+        activeRounds.delete(channelId);
+
+        for (const userId of round.guessers) {
+            await database.resetStreak(userId, gameState.teamId);
         }
-    }, 15000); // 15 secondi
 
-    // messaggi ricevuti
-    collector.on('collect', async message => {
-        if (message.author.bot) return // ignoro bot
-
-        // id utente e la sua guess
-        const userId = message.author.id
-        const guess = message.content
-
-        console.log(`[RoundHandler] Collected message from ${userId}: "${guess}"`);
-
-        // controllo se ha indovinato
-        const correct = await gameManager.checkGuess(userId, guess, guildId);
-
-        // indovinato
-        if (correct) {
-            console.log(`[RoundHandler] CORRECT answer from ${userId}!`);
-            // fermo il collector e mando ack
-            collector.stop('correct');
-            const currentSong = gameManager.getCurrentSong(guildId);
-            if (currentSong) {                    
-                interaction.channel.send(`The song was guessed by <@${userId}> **${currentSong.title}** by *${currentSong.artist}*`);
-            }
-            // vado al prossimo round
-            await gameManager.nextRound(interaction); 
-        } else {
-            console.log(`[RoundHandler] INCORRECT answer from ${userId}: "${guess}"`);
+        const toGuess = gameManager.getToGuess(channelId);
+        if (toGuess) {
+            await client.chat.postMessage({ channel: channelId, text: `Time's up! The song was *${toGuess}*` });
         }
-    });
+        await gameManager.nextRound({ client, channelId });
+    }, ROUND_MS);
 
-    collector.on('end', async (collected, reason) => {
-        // spengo il timeout
-        clearTimeout(hintTimeout);
-
-        // Rimuoviamo il collector dalla Map quando finisce
-        activeCollectors.delete(guildId);
-
-        console.log(`[RoundHandler] Collector ended - reason: ${reason}`);
-        
-        if (reason !== 'correct' && reason !== 'stopped' && reason !== 'new_round_started') {
-            const losers = [...new Set(collected.map(m => m.author.id))];
-            for (const id of losers) {
-                await database.resetStreak(id);
-            }
-            
-            const toGuess = gameManager.getToGuess(guildId);
-            if (toGuess) {
-                interaction.channel.send(`Time's up! The song was **${toGuess}**`);
-            }
-            await gameManager.nextRound(interaction);
-        }
-    })
-
-    // aggioro il collector
-    activeCollectors.set(guildId, collector);
+    activeRounds.set(channelId, round);
 }
 
 /**
- * Ferma il round corrente e libera il message collector
+ * Ferma il round corrente sul canale, se presente.
  */
-function stopRound(guildId) {
-    const collector = activeCollectors.get(guildId);
-    if (collector) {
-        collector.stop('stopped');
-        activeCollectors.delete(guildId);
-    }
+function stopRound(channelId) {
+    const round = activeRounds.get(channelId);
+    if (!round) return;
+    clearTimeout(round.hintTimeout);
+    clearTimeout(round.endTimeout);
+    activeRounds.delete(channelId);
 }
 
-module.exports = { startRound, stopRound }
+/**
+ * Processa un messaggio di chat come possibile risposta al round attivo sul canale.
+ * Chiamato dal listener globale `app.message()` in index.js.
+ * @param {Object} params - { client, gameManager, channelId, userId, text }
+ */
+async function handleMessage({ client, gameManager, channelId, userId, text }) {
+    // Con l'evento message.channels arriva un messaggio da ogni canale pubblico del
+    // workspace, non solo da quelli con un round attivo: questo controllo scarta la
+    // stragrande maggioranza in un singolo lookup, senza loggare (rumore inutile su
+    // un workspace grande — vedi bot_slack/README.md).
+    const round = activeRounds.get(channelId);
+    if (!round || round.roundEnded) return;
+
+    round.guessers.add(userId);
+
+    // controllo sincrono, nessun await prima del lock: se due persone rispondono
+    // quasi in contemporanea, solo la prima arriva a settare roundEnded
+    const correct = gameManager.isCorrectGuess(text, channelId);
+    console.log(`[RoundHandler] Guess from ${userId}: "${text}" -> correct=${correct}, expected="${gameManager.getToGuess(channelId)}"`);
+    if (!correct) return;
+
+    round.roundEnded = true;
+    clearTimeout(round.hintTimeout);
+    clearTimeout(round.endTimeout);
+    activeRounds.delete(channelId);
+
+    const teamId = gameManager.getTeamId(channelId);
+    await database.addPoint(userId, teamId);
+
+    const currentSong = gameManager.getCurrentSong(channelId);
+    if (currentSong) {
+        await client.chat.postMessage({
+            channel: channelId,
+            text: `The song was guessed by <@${userId}> — *${currentSong.title}* by _${currentSong.artist}_`,
+        });
+    }
+
+    await gameManager.nextRound({ client, channelId });
+}
+
+module.exports = { startRound, stopRound, handleMessage };

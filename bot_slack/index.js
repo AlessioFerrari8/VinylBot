@@ -1,6 +1,9 @@
 require("dotenv").config();
 
 const { App } = require("@slack/bolt");
+const quizCommands = require("./commands/quiz");
+const GameManager = require("./game/GameManager");
+const RoundHandler = require("./game/RoundHandler");
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
@@ -13,6 +16,22 @@ app.command("/vinylbot-ping", async ({ command, ack, respond }) => {
   await ack();
   const latency = Date.now() - start;
   await respond({ text: `Pong!\nLatency: ${latency}ms` });
+});
+
+quizCommands.register(app);
+
+// Ogni messaggio di chat è una potenziale risposta al quiz in corso sul canale.
+// RoundHandler ignora silenziosamente i messaggi se non c'è un round attivo lì.
+app.message(async ({ message, client }) => {
+  if (message.subtype || message.bot_id) return; // ignoro bot/edit/join ecc.
+
+  await RoundHandler.handleMessage({
+    client,
+    gameManager: GameManager,
+    channelId: message.channel,
+    userId: message.user,
+    text: message.text || "",
+  });
 });
 
 
