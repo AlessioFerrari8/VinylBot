@@ -23,7 +23,7 @@ RUN npm install --production
 # Copia il resto del codice
 COPY . .
 
-EXPOSE 8888
+EXPOSE 8889
 
 # --max-old-space-size=400: Limita la RAM di Node a 400MB (per stare nei 512MB di Railway)
 # --expose-gc: Permette al codice di chiamare global.gc() per pulire la RAM dopo la generazione del token

@@ -1,0 +1,7 @@
+node_modules
+npm-debug.log*
+.env
+.env.local
+*.log
+.git
+vinylbot-55b21-firebase-adminsdk-fbsvc-3742d0f090.json
