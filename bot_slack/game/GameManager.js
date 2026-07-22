@@ -200,9 +200,10 @@ function isCorrectGuess(guess, channelId) {
         .toLowerCase()
         .replace(/\(.*\)|\[.*\]/g, "")
         .replace(/[-–—].*/g, "")
+        .replace(/[''´`]/g, "'")
+        .replace(/[.,!?;:]/g, "")
         .trim()
-        .replace(/\s+/g, ' ')
-        .replace(/[''´`]/g, "'");
+        .replace(/\s+/g, ' ');
 
     const cleanGuess = clean(guess);
     const cleanToGuess = clean(toGuess);
