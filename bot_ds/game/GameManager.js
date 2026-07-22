@@ -285,10 +285,9 @@ function isCorrectGuess(userId, guess, guildId) {
         .toLowerCase()
         .replace(/\(.*\)|\[.*\]/g, "") // Rimuove tutto tra parentesi tonde o quadre
         .replace(/[-–—].*/g, "")       // Rimuove tutto dopo un trattino
-        .replace(/[''´`]/g, "'")
-        .replace(/[.,!?;:]/g, "")      // Rimuove punteggiatura (virgole, punti, ! ?, ecc.)
         .trim()
-        .replace(/\s+/g, ' ');
+        .replace(/\s+/g, ' ')
+        .replace(/[''´`]/g, "'");
 
     const cleanGuess = clean(guess);
     const cleanToGuess = clean(toGuess);
