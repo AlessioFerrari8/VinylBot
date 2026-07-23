@@ -226,49 +226,53 @@ async function createAudioStreamFromURL(audioUrl, durationSecs = 20) {
                 'pipe:1'
             ], { stdio: ['pipe', 'pipe', 'pipe'] });
 
-            let errorOccurred = false;
+            // settled: garantisce resolve/reject una volta sola. Fondamentale non risolvere
+            // finché non sappiamo che ffmpeg sta davvero producendo output: prima si risolveva
+            // subito in modo sincrono, quindi un fallimento successivo (reject) era un no-op e
+            // uno stream "rotto" arrivava comunque all'AudioPlayer di Discord.
+            let settled = false;
+            const settleResolve = (value) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(dataTimeout);
+                resolve(value);
+            };
+            const settleReject = (err) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(dataTimeout);
+                reject(err);
+            };
 
-            ffmpeg.on('error', (err) => {
-                errorOccurred = true;
-                reject(new Error(`[ffmpeg] ${err.message}`));
-            });
+            ffmpeg.on('error', (err) => settleReject(new Error(`[ffmpeg] ${err.message}`)));
 
             ffmpeg.on('exit', (code) => {
-                if (code !== 0 && code !== null && !errorOccurred) {
+                if (code !== 0 && code !== null) {
                     console.error(`[ffmpeg] Process exited with code ${code}`);
-                    errorOccurred = true;
-                    reject(new Error(`ffmpeg exit code ${code}`));
+                    settleReject(new Error(`ffmpeg exit code ${code}`));
                 }
             });
 
             response.pipe(ffmpeg.stdin);
 
-            response.on('error', (err) => {
-                errorOccurred = true;
-                reject(err);
-            });
+            response.on('error', (err) => settleReject(err));
 
             ffmpeg.stdin.on('error', () => { });
 
-            // Timeout detection
-            let dataReceived = false;
-            ffmpeg.stdout.once('data', () => {
-                dataReceived = true;
-                clearTimeout(dataTimeout);
+            // 'readable' segnala che ci sono dati pronti SENZA consumarli (a differenza di
+            // 'data', che metterebbe lo stream in flowing mode e farebbe perdere il primo
+            // chunk a chi lo consuma dopo, cioè l'AudioResource di Discord).
+            ffmpeg.stdout.once('readable', () => {
+                settleResolve({
+                    stream: ffmpeg.stdout,
+                    type: StreamType.OggOpus
+                });
             });
 
             const dataTimeout = setTimeout(() => {
-                if (!dataReceived && !errorOccurred) {
-                    errorOccurred = true;
-                    console.error('[Audio Stream] Timeout: no data from ffmpeg in 3 seconds');
-                    reject(new Error('Audio stream timeout - no data received'));
-                }
+                console.error('[Audio Stream] Timeout: no data from ffmpeg in 3 seconds');
+                settleReject(new Error('Audio stream timeout - no data received'));
             }, 3000);
-
-            resolve({
-                stream: ffmpeg.stdout,
-                type: StreamType.OggOpus
-            });
         }).on('error', (err) => {
             reject(new Error(`[Audio Download] ${err.message}`));
         });
@@ -333,25 +337,34 @@ async function createAudioStreamYtdlp(youtubeUrl) {
             'pipe:1'
         ], { stdio: ['pipe', 'pipe', 'pipe'] });
 
-        let errorOccurred = false;
+        // settled: stesso pattern di createAudioStreamFromURL — non risolvere finché non
+        // sappiamo che ffmpeg produce davvero output, altrimenti un reject successivo è un
+        // no-op e uno stream "rotto" arriva comunque all'AudioPlayer.
+        let settled = false;
         let isBotDetection = false;
+        const settleResolve = (value) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(dataTimeout);
+            resolve(value);
+        };
+        const settleReject = (err) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(dataTimeout);
+            reject(err);
+        };
 
         // Gestisci errori di yt-dlp
-        ytdlp.on('error', (err) => {
-            errorOccurred = true;
-            reject(new Error(`[yt-dlp] ${err.message}`));
-        });
+        ytdlp.on('error', (err) => settleReject(new Error(`[yt-dlp] ${err.message}`)));
 
         ytdlp.on('exit', (code, signal) => {
             if (code !== 0 && code !== null) {
                 console.error(`[yt-dlp] Process exited with code ${code}`);
-                if (!errorOccurred) {
-                    errorOccurred = true;
-                    if (isBotDetection) {
-                        reject(new Error(`YouTube bot detection - yt-dlp exit code ${code}`));
-                    } else {
-                        reject(new Error(`yt-dlp exit code ${code}`));
-                    }
+                if (isBotDetection) {
+                    settleReject(new Error(`YouTube bot detection - yt-dlp exit code ${code}`));
+                } else {
+                    settleReject(new Error(`yt-dlp exit code ${code}`));
                 }
             }
         });
@@ -361,29 +374,22 @@ async function createAudioStreamYtdlp(youtubeUrl) {
             if (msg.includes('bot') || msg.includes('sign in') || msg.includes('Sign in')) {
                 console.error('[yt-dlp] Bot detection detected!');
                 isBotDetection = true;
-                if (!errorOccurred) {
-                    errorOccurred = true;
-                    // Kill sia yt-dlp che ffmpeg immediatamente
-                    ytdlp.kill('SIGKILL');
-                    ffmpeg.kill('SIGKILL');
-                    reject(new Error('YouTube bot detection - aborting stream'));
-                }
+                // Kill sia yt-dlp che ffmpeg immediatamente
+                ytdlp.kill('SIGKILL');
+                ffmpeg.kill('SIGKILL');
+                settleReject(new Error('YouTube bot detection - aborting stream'));
             } else if (msg.includes('ERROR')) {
                 console.error('[yt-dlp] Error:', msg.slice(0, 150));
             }
         });
 
         // Gestisci errori di ffmpeg
-        ffmpeg.on('error', (err) => {
-            errorOccurred = true;
-            reject(new Error(`[ffmpeg] ${err.message}`));
-        });
+        ffmpeg.on('error', (err) => settleReject(new Error(`[ffmpeg] ${err.message}`)));
 
         ffmpeg.on('exit', (code) => {
-            if (code !== 0 && code !== null && !errorOccurred) {
+            if (code !== 0 && code !== null) {
                 console.error(`[ffmpeg] Process exited with code ${code}`);
-                errorOccurred = true;
-                reject(new Error(`ffmpeg exit code ${code}`));
+                settleReject(new Error(`ffmpeg exit code ${code}`));
             }
         });
 
@@ -393,31 +399,23 @@ async function createAudioStreamYtdlp(youtubeUrl) {
         ytdlp.stdout.on('error', () => { });
         ytdlp.stdin?.on('error', () => { });
         ffmpeg.stdin.on('error', () => { });
-        
-        // Timeout: se nessun dato arriva in 8 secondi, probabilmente è fallito
-        let dataReceived = false;
-        ffmpeg.stdout.once('data', () => {
-            dataReceived = true;
-            clearTimeout(dataTimeout);
-        });
-        
-        const dataTimeout = setTimeout(() => {
-            if (!dataReceived && !errorOccurred) {
-                errorOccurred = true;
-                console.error('[Audio Stream] Timeout: no data from ffmpeg in 3 seconds');
-                ytdlp.kill('SIGKILL');
-                ffmpeg.kill('SIGKILL');
-                reject(new Error('Audio stream creation timeout'));
-            }
-        }, 3000);
 
-        // Risolvi SOLO se tutto ha successo
-        if (!errorOccurred) {
-            resolve({ 
-                stream: ffmpeg.stdout, 
-                type: StreamType.OggOpus 
+        // 'readable' segnala dati pronti SENZA consumarli (a differenza di 'data', che
+        // metterebbe lo stream in flowing mode e farebbe perdere il primo chunk
+        // all'AudioResource di Discord che lo consuma dopo).
+        ffmpeg.stdout.once('readable', () => {
+            settleResolve({
+                stream: ffmpeg.stdout,
+                type: StreamType.OggOpus
             });
-        }
+        });
+
+        const dataTimeout = setTimeout(() => {
+            console.error('[Audio Stream] Timeout: no data from ffmpeg in 3 seconds');
+            ytdlp.kill('SIGKILL');
+            ffmpeg.kill('SIGKILL');
+            settleReject(new Error('Audio stream creation timeout'));
+        }, 3000);
     });
 }
 

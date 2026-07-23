@@ -33,6 +33,24 @@ localMusic.loadSongs();  // Carica le canzoni all'avvio
  * @param {Object} track - Oggetto track Spotify (name, artists[])
  * @returns {Promise<{resource, currentSong}|null>} null se non c'è nessuna sorgente disponibile
  */
+/**
+ * Crea un AudioPlayer con i listener di base già agganciati. Fondamentale il listener
+ * 'error': un player senza .on('error', ...) fa sì che un errore di stream/ffmpeg
+ * (playback fallito a metà round) butti giù l'intero processo Node invece di restare
+ * confinato alla singola partita — vedi @discordjs/voice, gli EventEmitter senza
+ * listener su 'error' rilanciano come eccezione non gestita.
+ */
+function createPlayer() {
+    const player = createAudioPlayer();
+    player.on('error', err => console.error('[Player Error]', err));
+    player.on('stateChange', (old, newState) => {
+        console.log(`[Player State] ${old.status} -> ${newState.status}`);
+    });
+    player.on(AudioPlayerStatus.Playing, () => console.log('Audio is playing!'));
+    player.on(AudioPlayerStatus.Idle, () => console.log('Audio idle'));
+    return player;
+}
+
 async function resolveTrackAudio(track) {
     console.log('Searching for:', `${track.name} ${track.artists[0].name}`);
     try {
@@ -115,38 +133,41 @@ async function startGame(interaction, artistName, userId) {
         return interaction.editReply('Could not connect to voice channel! Check bot permissions.');
     }
 
-    // ottengo l'artista
-    const artist = await spotify.searchArtist(userId, artistName)
-    if (!artist) {
-        connection.destroy();
-        return interaction.editReply('Artist not found')
-    }
+    // Da qui in poi qualsiasi eccezione (Spotify down, rate-limit, stream non
+    // disponibile...) deve comunque liberare la connessione voice, altrimenti il bot
+    // resta agganciato al canale senza che games abbia una entry da ripulire.
+    let track, audio, tracks;
+    try {
+        // ottengo l'artista
+        const artist = await spotify.searchArtist(userId, artistName)
+        if (!artist) {
+            connection.destroy();
+            return interaction.editReply('Artist not found')
+        }
 
-    // ottengo le tracks
-    const tracks = await spotify.getArtistTopTracks(userId, artistName)
-    if (!tracks) {
-        connection.destroy();
-        return interaction.editReply('Error: didn\'t find any track for the artist')
-    }
+        // ottengo le tracks
+        tracks = await spotify.getArtistTopTracks(userId, artistName)
+        if (!tracks) {
+            connection.destroy();
+            return interaction.editReply('Error: didn\'t find any track for the artist')
+        }
 
-    // scelgo una track random
-    const track = tracks[Math.floor(Math.random() * tracks.length)];
+        // scelgo una track random
+        track = tracks[Math.floor(Math.random() * tracks.length)];
 
-    const audio = await resolveTrackAudio(track);
-    if (!audio) {
+        audio = await resolveTrackAudio(track);
+        if (!audio) {
+            connection.destroy();
+            return interaction.editReply('No results found!');
+        }
+    } catch (err) {
+        console.error('[startGame] Failed before playback started:', err);
         connection.destroy();
-        return interaction.editReply('No results found!');
+        return interaction.editReply('Error starting game.');
     }
 
     // streammo la canzone
-    const player = createAudioPlayer()
-
-    player.on('error', err => console.error('[Player Error]', err));
-    player.on('stateChange', (old, newState) => {
-        console.log(`[Player State] ${old.status} -> ${newState.status}`);
-    });
-    player.on(AudioPlayerStatus.Playing, () => console.log('Audio is playing!'));
-    player.on(AudioPlayerStatus.Idle, () => console.log('Audio idle'));
+    const player = createPlayer();
 
     player.play(audio.resource)
     connection.subscribe(player)
@@ -245,7 +266,7 @@ async function nextRound(interaction) {
     const audio = await resolveTrackAudio(track);
     if (!audio) return interaction.channel.send('No results found!');
 
-    const player = createAudioPlayer();
+    const player = createPlayer();
     player.play(audio.resource);
     gameState.connection.subscribe(player);
 
