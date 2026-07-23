@@ -19,6 +19,12 @@ function tmpMp3Path() {
     return path.join(os.tmpdir(), `vinylbot-${crypto.randomBytes(6).toString('hex')}.mp3`);
 }
 
+// Un download/ffmpeg fallito può aver già scritto un file parziale su outPath: va
+// ripulito sui path di errore, altrimenti resta orfano su un VPS long-running.
+function cleanupPartial(outPath) {
+    fs.unlink(outPath, () => { });
+}
+
 /**
  * Scarica un URL audio e lo taglia/converte in mp3 con ffmpeg, scrivendolo su file.
  * @param {string} audioUrl
@@ -49,12 +55,14 @@ function downloadToMp3(audioUrl, durationSecs = CLIP_SECONDS) {
 
             ffmpeg.on('error', (err) => {
                 errorOccurred = true;
+                cleanupPartial(outPath);
                 reject(new Error(`[ffmpeg] ${err.message}`));
             });
 
             ffmpeg.on('exit', (code) => {
                 if (errorOccurred) return;
                 if (code !== 0 && code !== null) {
+                    cleanupPartial(outPath);
                     reject(new Error(`ffmpeg exit code ${code}`));
                     return;
                 }
@@ -62,7 +70,7 @@ function downloadToMp3(audioUrl, durationSecs = CLIP_SECONDS) {
             });
 
             response.pipe(ffmpeg.stdin);
-            response.on('error', (err) => { errorOccurred = true; reject(err); });
+            response.on('error', (err) => { errorOccurred = true; cleanupPartial(outPath); reject(err); });
             ffmpeg.stdin.on('error', () => { });
         }).on('error', (err) => {
             reject(new Error(`[Audio Download] ${err.message}`));
@@ -111,6 +119,7 @@ function downloadYtdlpToMp3(youtubeUrl) {
             errorOccurred = true;
             ytdlp.kill('SIGKILL');
             ffmpeg.kill('SIGKILL');
+            cleanupPartial(outPath);
             reject(err);
         };
 

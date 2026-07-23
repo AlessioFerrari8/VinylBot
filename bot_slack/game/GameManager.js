@@ -22,6 +22,15 @@ localMusic.loadSongs();
 const MAX_ROUNDS = 10;
 
 /**
+ * Escapa i caratteri speciali di Slack prima di interpolare testo utente in un messaggio
+ * non-ephemeral: senza questo, un artistName tipo "<!channel>" o "<!here>" verrebbe
+ * interpretato da Slack come mention broadcast, permettendo di pingare tutto il canale.
+ */
+function escapeSlackText(text) {
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/**
  * Ripulisce un titolo da suffissi tipo "- Remastered 2009" o "(Live)": stessa logica
  * usata per il confronto in isCorrectGuess, applicata già in fase di storage così hint
  * e messaggi mostrano sempre il titolo pulito, non il nome grezzo restituito da Spotify.
@@ -69,14 +78,18 @@ async function resolveTrackAudio(track) {
  * Carica l'estratto audio nel canale Slack e cancella il file temporaneo dopo l'upload.
  */
 async function postClip(client, channelId, audio, comment) {
-    await client.files.uploadV2({
-        channel_id: channelId,
-        file: fs.createReadStream(audio.filePath),
-        // MAI il titolo della canzone nel filename: Slack lo mostra nel player, spoilerebbe la risposta
-        filename: `clip-round.mp3`,
-        initial_comment: comment,
-    });
-    if (audio.isTemp) fs.unlink(audio.filePath, () => { });
+    try {
+        await client.files.uploadV2({
+            channel_id: channelId,
+            file: fs.createReadStream(audio.filePath),
+            // MAI il titolo della canzone nel filename: Slack lo mostra nel player, spoilerebbe la risposta
+            filename: `clip-round.mp3`,
+            initial_comment: comment,
+        });
+    } finally {
+        // ripulisco anche se l'upload fallisce, altrimenti il file resta orfano in tmpdir
+        if (audio.isTemp) fs.unlink(audio.filePath, () => { });
+    }
 }
 
 /**
@@ -86,13 +99,13 @@ async function postClip(client, channelId, audio, comment) {
 async function startGame({ client, channelId, teamId, artistName }) {
     const artist = await spotify.searchArtist(artistName);
     if (!artist) {
-        await client.chat.postMessage({ channel: channelId, text: `Artist not found: *${artistName}*` });
+        await client.chat.postMessage({ channel: channelId, text: `Artist not found: *${escapeSlackText(artistName)}*` });
         return;
     }
 
     const tracks = await spotify.getArtistTopTracks(artistName);
     if (!tracks || !tracks.length) {
-        await client.chat.postMessage({ channel: channelId, text: `No tracks found for *${artistName}*` });
+        await client.chat.postMessage({ channel: channelId, text: `No tracks found for *${escapeSlackText(artistName)}*` });
         return;
     }
 
