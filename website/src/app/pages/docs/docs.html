@@ -168,24 +168,61 @@
 
           <!-- Slack bot -->
           <section id="slack-bot" class="scroll-mt-28">
-            <div class="flex flex-wrap items-center gap-3">
-              <h2 class="font-display text-3xl font-bold tracking-tight text-white">Slack bot</h2>
-              <span class="rounded-full bg-vb-slack/10 px-3 py-1 text-xs font-semibold text-vb-slack">
-                In development
-              </span>
-            </div>
+            <h2 class="font-display text-3xl font-bold tracking-tight text-white">Slack bot</h2>
             <p class="mt-4 leading-relaxed text-white/55">
               The Slack version is a separate project designed around how Slack works —
-              no voice channels, so the game lives entirely in chat. The bot plays a
-              15-second song preview, and whoever writes the title first in the channel
-              wins points. Same leaderboard, streaks and badges as the Discord version.
+              no voice channels, so the game lives entirely in chat. The bot posts a
+              ~15-second audio clip in the channel, and whoever writes the title first
+              wins the point. Same leaderboard, streaks and badges as the Discord version,
+              tracked per workspace.
             </p>
+
+            <div class="mt-6 grid gap-5 md:grid-cols-2">
+              <div class="rounded-2xl border border-vb-border bg-vb-card p-6">
+                <h3 class="font-display text-lg font-semibold text-white">💬 Chat-based guessing game</h3>
+                <p class="mt-2 text-sm leading-relaxed text-white/55">
+                  <code class="code-chip">/vinylbot-quiz_start</code> uploads an audio clip
+                  as a file in the channel and starts a 30-second round, with a hint
+                  dropping after 15. First correct guess in chat wins — 10 rounds per game,
+                  then the final leaderboard.
+                </p>
+              </div>
+              <div class="rounded-2xl border border-vb-border bg-vb-card p-6">
+                <h3 class="font-display text-lg font-semibold text-white">🔓 No login required</h3>
+                <p class="mt-2 text-sm leading-relaxed text-white/55">
+                  Unlike the Discord bot, no one needs to link a personal Spotify account
+                  to play — artist and track search run entirely on VinylBot's own Spotify
+                  app credentials.
+                </p>
+              </div>
+            </div>
+
+            <h3 class="mt-10 font-display text-xl font-semibold text-white">Commands</h3>
+            <div class="mt-4 overflow-x-auto rounded-2xl border border-vb-border bg-vb-card">
+              <table class="w-full text-left text-sm">
+                <thead>
+                  <tr class="border-b border-vb-border text-xs uppercase tracking-wider text-white/40">
+                    <th class="px-5 py-3 font-semibold">Command</th>
+                    <th class="px-5 py-3 font-semibold">Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (c of slackCommands; track c.cmd) {
+                    <tr class="border-b border-vb-border last:border-0">
+                      <td class="px-5 py-3"><code class="code-chip">{{ c.cmd }}</code></td>
+                      <td class="px-5 py-3 text-white/60">{{ c.desc }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
             <div class="mt-6 rounded-2xl border border-vb-border bg-vb-card p-6">
               <p class="text-sm leading-relaxed text-white/55">
-                Setup instructions and the install link will land here as soon as the
-                Slack bot ships. Follow the
-                <a href="https://github.com/AlessioFerrari8/VinylBot/tree/main/bot_slack" target="_blank" rel="noopener" class="text-vb-slack underline-offset-4 hover:underline">GitHub repository</a>
-                for progress.
+                The bot needs to be invited to a channel (<code class="code-chip">/invite @VinylBot</code>)
+                before it can see guesses there. Not on a public workspace yet — for setup
+                and self-hosting, see
+                <a href="https://github.com/AlessioFerrari8/VinylBot/tree/main/bot_slack" target="_blank" rel="noopener" class="text-vb-slack underline-offset-4 hover:underline">bot_slack on GitHub</a>.
               </p>
             </div>
           </section>

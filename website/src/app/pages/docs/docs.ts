@@ -40,6 +40,16 @@ export class Docs {
     { cmd: '/nowplaying', desc: 'Show currently playing song info' },
   ];
 
+  readonly slackCommands = [
+    { cmd: '/vinylbot-quiz_start <artist>', desc: 'Start a new guessing game with an artist' },
+    { cmd: '/vinylbot-quiz_skip', desc: 'Skip to the next round' },
+    { cmd: '/vinylbot-quiz_stop', desc: 'Stop the current game' },
+    { cmd: '/vinylbot-leaderboard [global]', desc: 'Workspace leaderboard with badges (add global to aggregate across workspaces)' },
+    { cmd: '/vinylbot-stats', desc: 'Show your personal statistics & streak' },
+    { cmd: '/vinylbot-streak', desc: 'Show your current and best streak' },
+    { cmd: '/vinylbot-ping', desc: 'Check if the bot is alive' },
+  ];
+
   readonly authFlow = [
     'Run /auth in your server',
     'The bot replies with a Spotify login link',
