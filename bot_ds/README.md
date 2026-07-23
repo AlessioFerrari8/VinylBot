@@ -1,264 +1,142 @@
-# 🎵 VinylBot - Discord Music Quiz Bot
+# VinylBot — Discord
 
-A Discord bot that combines Spotify control with an interactive music guessing game. Play 30-second song previews and challenge your server to guess the titles!
+A Discord "guess the song" music quiz bot with Spotify-powered search: the bot joins your voice channel and plays a ~20s song preview, first to type the right title in chat wins the point. Per-server leaderboard, streaks, and badges — plus optional personal Spotify remote control from Discord.
 
-## ✨ Features
+Live health check: [vinylbot.alessio.hackclub.app/health](https://vinylbot.alessio.hackclub.app/health) — this is the URL the website's `/status` page polls (`website/src/app/pages/status/status.ts`).
 
-### 🎮 Music Guessing Game
-- Start a game with any Spotify artist: `/quiz_start <artist>`
-- Listen to 30-second song previews
-- Guess the song title in chat
-- First correct answer earns points
-- **Leaderboard system** with badges and win streak tracking
+## How it works
 
-### 🎵 Spotify Control
-- Control Spotify directly from Discord
-- `/play <song>` - Search and play songs
-- `/pause` - Pause playback
-- `/resume` - Resume playback
-- `/skip` - Skip to next track
-- Management commands: `/auth`, `/logout`
+- `/quiz_start <artist>` picks a random track by that artist, joins your current voice channel, and plays a preview to start a round (a hint drops after 15s).
+- Type the title in chat — first correct guess wins the point (and streak), then the next round starts automatically. 10 rounds per game, then the final leaderboard.
+- Separately, `/auth` links your own Spotify account so you can control your personal playback from Discord (`/play`, `/pause`, `/resume`, `/skip`, `/previous`, `/volume`, `/nowplaying`) — unrelated to the quiz game, no auth needed just to play.
 
----
+## Commands
 
-### 🚀 Quick start
+### Game
 
-### Installation
-[Install the bot](https://discord.com/oauth2/authorize?client_id=1487848371137024222&scope=bot&permissions=3148800)
+| Command | Description |
+|---|---|
+| `/quiz_start <artist>` | Start a game with an artist (requires `/auth` first) |
+| `/quiz_skip` | Skip to the next round |
+| `/quiz_stop` | Stop the current game |
+| `/leaderboard [global]` | Server leaderboard (add `global` to aggregate across servers) |
+| `/stats` | Your points, badge, rank and streak |
+| `/streak` | Your current and best streak |
 
-### Deploy
-I use #nest vps for deploy.
+### Spotify (personal playback control)
 
-## Disclaimer
-For now, in the music game there are just a few beatles songs.
-That's because yt blocks anything that comes from bots, so I can't stream music.
-If you want to use it completely, you just have to host it yourself, with the instructions below.
+| Command | Description |
+|---|---|
+| `/auth` | Link your Spotify account |
+| `/logout` | Unlink your Spotify account |
+| `/play <song>` | Search and play a song on your active device |
+| `/pause` / `/resume` | Pause / resume playback |
+| `/skip` / `/previous` | Next / previous track |
+| `/volume <level>` | Set volume (0-100) |
+| `/nowplaying` | Show the currently playing track |
 
-## Complete Start
+## Setup
 
 ### Prerequisites
-- Node.js 18+
-- Docker & Docker Compose (for deployment)
-- Discord Bot Token
-- Spotify Developer Credentials
 
-### How to use it
-1. **Install**
-[Install](https://discord.com/oauth2/authorize?client_id=1487848371137024222&scope=bot&permissions=3148800) the bot on a server
-2. **Clone and install:**
+- Node.js 20+ (the Docker image uses `node:20-alpine`)
+- A Discord application (Discord Developer Portal) with a bot user — Token + Client ID, invited to your server with `Send Messages`, `Read Message History`, `Connect` and `Speak` permissions:
+  [invite link](https://discord.com/oauth2/authorize?client_id=1487848371137024222&scope=bot%20applications.commands&permissions=3148800) (VinylBot's own app — swap the `client_id` for yours if self-hosting a separate bot)
+- A Spotify Developer app — Client ID/Secret, plus a Redirect URI matching `SPOTIFY_REDIRECT_URI` (only needed for the personal `/auth` flow; the quiz itself only uses Client Credentials, no redirect involved)
+- A Firebase project with Firestore (can be the same one used by `bot_slack` — different collection, no collisions)
+
+### Local
+
 ```bash
-git clone <repo>
-cd VinylBot
+cd bot_ds
 npm install
+cp .env.example .env   # fill in the values, see below
 ```
-3. **Create `.env` file:**
+
+Also drop the Firebase service-account JSON in this folder.
+
+```bash
+npm run dev
+```
+
+Server (Spotify OAuth callback + `/health`) starts on `http://localhost:8888`.
+
+### `.env`
+
 ```env
-# Discord
 DISCORD_TOKEN=your_discord_token
 DISCORD_CLIENT_ID=your_client_id
-
-# Spotify
-SPOTIFY_CLIENT_ID=your_spotify_id
-SPOTIFY_CLIENT_SECRET=your_spotify_secret
-SPOTIFY_REDIRECT_URI=http://localhost:8888/callback
-
-# Firebase (optional, fallback to local JSON storage)
-FIREBASE_CREDENTIALS={"type":"service_account",...}
-
-# Server
-PORT=8888
-```
-4. **Spotify OAuth Setup:**
-   - Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-   - Create/Edit your app
-   - Add Redirect URI: `http://localhost:8888/callback`
-   - Copy Client ID and Secret to `.env`
-
-5. **Run locally:**
-```bash
-npm install
-npm start
-```
-
-Server will start on `http://localhost:8888`
-
----
-
-### 🐳 Docker Compose Setup (Recommended)
-
-Run the bot inside Docker without installing Node.js locally.
-
-1. **Prepare `.env` file** (same as above, but with localhost):
-```env
-DISCORD_TOKEN=your_token
-DISCORD_CLIENT_ID=your_client_id
-SPOTIFY_CLIENT_ID=your_id
-SPOTIFY_CLIENT_SECRET=your_secret
+GUILD_ID=your_test_guild_id     # optional: registers commands to one guild instantly instead
+                                 # of globally (global registration takes up to ~1h to propagate)
+SPOTIFY_CLIENT_ID=...
+SPOTIFY_CLIENT_SECRET=...
 SPOTIFY_REDIRECT_URI=http://localhost:8888/callback
 PORT=8888
-FIREBASE_CREDENTIALS=...  # optional
+DEPLOY_ENV=local_or_vps         # "vps" skips YouTube (blocked from datacenters) - Spotify/iTunes/Deezer preview + local files only
+# FIREBASE_CREDENTIALS=...      # deploy only; locally use the JSON file instead
 ```
 
-2. **Build and run with Docker Compose:**
-```bash
-docker-compose up -d
-```
+### Docker
 
-3. **View logs:**
-```bash
-docker-compose logs -f vinylbot
-```
-
-4. **Stop the bot:**
-```bash
-docker-compose down
-```
-
-5. **Rebuild the image** (after code changes):
 ```bash
 docker-compose up -d --build
 ```
 
----
+### Deploying to the VPS (build locally, ship the image)
 
-### 🌐 Using ngrok for Spotify OAuth (If needed)
-
-If you want to test with HTTPS locally (some setups require it):
+Building on the VPS itself needs more RAM than it has to spare. Instead, build the image here and ship it as a tar — the VPS only ever runs `docker load` + `docker run`, no `npm install`, no compiling.
 
 ```bash
-# Install ngrok: https://ngrok.com/download
+# 1. Build & save locally
+docker build -t vinylbot:latest .
+docker save vinylbot:latest | gzip > vinylbot.tar.gz
 
-# Start ngrok tunnel
-ngrok http 8888
-# Output: Forwarding https://abc123.ngrok.io -> http://localhost:8888
+# 2. Prepare a production .env (same as .env.example but DEPLOY_ENV=vps, and
+#    FIREBASE_CREDENTIALS as a one-line compact JSON instead of the file —
+#    docker's --env-file breaks on multi-line/pretty-printed values)
+#    FIREBASE_CREDENTIALS=$(jq -c . vinylbot-55b21-firebase-adminsdk-fbsvc-3742d0f090.json)
 
-# Update .env
-SPOTIFY_REDIRECT_URI=https://abc123.ngrok.io/callback
+# 3. Ship both to the VPS
+scp vinylbot.tar.gz vinylbot.env alessio@hackclub.app:~
 
-# Add to Spotify Developer Dashboard:
-# https://abc123.ngrok.io/callback
-
-# Restart bot
-npm run dev  # or docker-compose restart
+# 4. On the VPS: load and (re)run
+ssh alessio@hackclub.app '
+  docker load -i ~/vinylbot.tar.gz
+  docker rm -f vinylbot 2>/dev/null
+  docker run -d --name vinylbot -p 8888:8888 \
+    --dns 8.8.8.8 --dns 8.8.4.4 \
+    --env-file ~/vinylbot.env \
+    --restart unless-stopped \
+    vinylbot:latest
+'
 ```
 
----
+Check it's actually up: `ssh alessio@hackclub.app "docker logs vinylbot --tail 30 && curl -s localhost:8888/health"`.
 
-## 📋 Commands
+If the domain/port is fronted by the Nest ingress, remember to open a matching varco in `/usr/local/sbin/docker-firewall.sh` for the port you publish — otherwise the container is up and healthy locally but unreachable from outside (same gotcha hit with `bot_slack`, see its README/vault history).
 
-### 🎮 Game Commands
-| Command | Description |
-|---------|-------------|
-| `/quiz_start <artist>` | Start a new guessing game with an artist |
-| `/quiz_skip` | Skip to the next song in the game |
-| `/quiz_stop` | Stop the current game session |
-| `/leaderboard` | View server rankings with badges 🏆 |
-| `/stats` | Show your personal statistics & streaks |
-| `/streak` | Show your current win streak |
+## Notes
 
-### 🎵 Spotify Commands
-| Command | Description |
-|---------|-------------|
-| `/auth` | Link your Spotify account (required for game) |
-| `/logout` | Unlink Spotify account |
-| `/play <song>` | Search and play a song on your device |
-| `/pause` | Pause Spotify playback |
-| `/resume` | Resume Spotify playback |
-| `/skip` | Skip to next track |
-| `/previous` | Go back to previous track |
-| `/volume <level>` | Set Spotify volume (0-100) |
-| `/nowplaying` | Show currently playing song info |
+### Where the quiz audio comes from — `DEPLOY_ENV=local` vs `vps`
 
----
+For each round the bot needs a short preview of the chosen song, tried in this order:
 
-## 📁 Project Structure
+1. **Spotify preview** — tried first always, works from anywhere including a datacenter, but not every track has one (Spotify stopped guaranteeing `preview_url` for a lot of the catalog).
+2. **iTunes** and **Deezer** search previews — free, no auth, no bot detection, also work from any IP. Cover a lot of what Spotify misses.
+3. **YouTube** (`play-dl` → Invidious → `yt-dlp` with cookies) — only attempted when `DEPLOY_ENV=local`. YouTube actively blocks/rate-limits datacenter IPs, so this whole chain is skipped on `DEPLOY_ENV=vps` — trying it there would just fail slowly.
+4. **Local files** in `music/` — last resort, works everywhere, but only if you've actually put mp3s in there (the folder is empty by default).
 
-```
-VinylBot/
-├── commands/          # Slash command implementations
-│   ├── quiz.js       # Quiz game commands
-│   └── spotify.js    # Spotify control commands
-├── game/             # Game logic
-│   ├── GameManager.js        # Main game orchestration
-│   ├── RoundHandler.js       # Round management
-│   ├── Scorer.js             # Point tracking
-│   └── YouTubeSearch.js      # Audio streaming
-├── db/               # Database utilities
-│   ├── firestore.js  # Firestore integration
-│   └── database.js   # Fallback JSON storage
-├── spotify/          # Spotify API integration
-│   ├── client.js     # Spotify API wrapper
-│   └── tokenStore.js # Token management
-├── public/           # Static files
-├── index.js          # Bot entry point
-├── Dockerfile        # Docker configuration
-└── docker-compose.yml # Local Docker setup
-```
+So use `DEPLOY_ENV=local` on your own machine (full fallback chain) and `DEPLOY_ENV=vps` on a server (Spotify/iTunes/Deezer preview + local files only). If an artist's tracks mostly lack previews on all three services, drop a handful of mp3s into `music/` as a safety net so rounds don't run out of songs.
 
----
+### Scores and leaderboard
 
-## 🔐 Authentication Flow
+Points/streaks are stored per-server in Firestore (`${guildId}_${userId}`). `/leaderboard` shows the current server by default; pass the `global` option to aggregate across every server the bot is in.
 
-### Spotify OAuth2
-1. User runs `/auth`
-2. Bot returns Spotify login link
-3. User authorizes the bot
-4. Spotify redirects to `/callback` with auth code
-5. Bot exchanges code for access/refresh tokens
-6. Tokens stored in Firestore
+### Known limitations
 
----
+- No automated tests or linter — plain `npm start` / `npm run dev`.
+- A single user can technically "cheat" by playing solo with nobody competing — a game-design question, not a bug, left as-is for now.
 
-## 🛠 Tech Stack
+## License
 
-- **Discord.js** - Discord bot framework
-- **Spotify Web API** - Music data & control
-- **@discordjs/voice** - Voice channel management
-- **Firebase Admin** - Token & score storage
-- **Express.js** - OAuth callback server
-- **@distube/ytdl-core** - YouTube audio streaming
-- **play-dl** - Song search & streaming fallback
-
----
-
-## 🐛 Troubleshooting
-
-### Bot won't start
-- Check `DISCORD_TOKEN` in `.env`
-- Verify Node.js version (18+)
-- Run `npm install` again
-
-### `/auth` not working
-- Ensure `SPOTIFY_REDIRECT_URI` matches Spotify Developer Dashboard
-- Use HTTPS in production (Railway provides this)
-- Check Spotify Developer App settings under "Redirect URIs"
-
-### No audio in voice channel
-- Verify bot has "Connect" and "Speak" permissions
-- Check if FFmpeg is installed (Docker has it)
-- Review YouTube blocking (use delays between requests)
-
-### Firestore connection issues
-- Ensure `FIREBASE_CREDENTIALS` or credentials file exists
-- Check Firebase project permissions
-- Tokens will fallback to local JSON storage
-
----
-
-## 🤖 Add Bot to Server
-
-[Click here to authorize the bot](https://discord.com/oauth2/authorize?client_id=1487848371137024222&scope=bot&permissions=3148800)
-
-Required permissions:
-- Send Messages
-- Read Message History
-- Speak
-- Connect (voice channels)
-
----
-
-## 📝 License
-
-MIT License - Feel free to fork and modify!
-
----
+MIT License — feel free to fork and modify!
