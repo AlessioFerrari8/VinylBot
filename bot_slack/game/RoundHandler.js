@@ -31,23 +31,31 @@ function startRound({ client, channelId, gameManager, gameState }) {
             .split(' ')
             .map(w => w[0] + '\\_'.repeat(Math.max(w.length - 1, 0)))
             .join(' ');
-        client.chat.postMessage({ channel: channelId, text: `💡 *Hint:* ${hint}` });
+        client.chat.postMessage({ channel: channelId, text: `💡 *Hint:* ${hint}` })
+            .catch(err => console.error('[RoundHandler] hint postMessage failed:', err.message));
     }, HINT_MS);
 
+    // async dentro setTimeout: senza try/catch una singola await rigettata (Slack API
+    // rate-limit, Firestore giù...) sarebbe una unhandled rejection che crasha l'intero
+    // processo, non solo il round/canale coinvolto.
     round.endTimeout = setTimeout(async () => {
-        if (round.roundEnded) return;
-        round.roundEnded = true;
-        activeRounds.delete(channelId);
+        try {
+            if (round.roundEnded) return;
+            round.roundEnded = true;
+            activeRounds.delete(channelId);
 
-        for (const userId of round.guessers) {
-            await database.resetStreak(userId, gameState.teamId);
-        }
+            for (const userId of round.guessers) {
+                await database.resetStreak(userId, gameState.teamId);
+            }
 
-        const toGuess = gameManager.getToGuess(channelId);
-        if (toGuess) {
-            await client.chat.postMessage({ channel: channelId, text: `Time's up! The song was *${toGuess}*` });
+            const toGuess = gameManager.getToGuess(channelId);
+            if (toGuess) {
+                await client.chat.postMessage({ channel: channelId, text: `Time's up! The song was *${toGuess}*` });
+            }
+            await gameManager.nextRound({ client, channelId });
+        } catch (err) {
+            console.error('[RoundHandler] endTimeout failed:', err);
         }
-        await gameManager.nextRound({ client, channelId });
     }, ROUND_MS);
 
     activeRounds.set(channelId, round);

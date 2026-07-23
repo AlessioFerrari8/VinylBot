@@ -1,5 +1,14 @@
 require("dotenv").config();
 
+// Un errore isolato non deve buttare giù l'intero processo: significherebbe tutti i
+// canali/round attivi persi insieme per un problema in uno solo.
+process.on('unhandledRejection', (err) => {
+  console.error('[Unhandled Rejection]', err);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[Uncaught Exception]', err);
+});
+
 const { App } = require("@slack/bolt");
 const quizCommands = require("./commands/quiz");
 const GameManager = require("./game/GameManager");
