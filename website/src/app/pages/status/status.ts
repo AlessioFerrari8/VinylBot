@@ -21,7 +21,7 @@ export class Status {
     {
       name: 'Discord bot',
       desc: 'Voice quiz + Spotify control',
-      url: 'https://vinylbot.alessio.hackclub.app/health',
+      url: 'https://vinylbot-ds.alessio.hackclub.app/health',
       state: 'checking',
       ping: null,
       uptime: null,
