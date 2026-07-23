@@ -98,6 +98,72 @@ async function searchSpotifyTrack(query) {
     }
 }
 
+async function searchItunesTrack(query) {
+    try {
+        console.log('[iTunes] Searching for:', query);
+        const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=1`);
+
+        if (!res.ok) {
+            throw new Error(`iTunes search error: ${res.status}`);
+        }
+
+        const data = await res.json();
+        const track = data.results?.[0];
+
+        if (!track || !track.previewUrl) {
+            console.warn('[iTunes] No preview available');
+            return null;
+        }
+
+        console.log('[iTunes] ✅ Found track with preview:', track.trackName, 'by', track.artistName);
+
+        return {
+            name: track.trackName,
+            artist: track.artistName,
+            album: track.collectionName,
+            image: track.artworkUrl100,
+            preview_url: track.previewUrl,
+            duration: track.trackTimeMillis
+        };
+    } catch (error) {
+        console.error('[iTunes] Search error:', error.message);
+        return null;
+    }
+}
+
+async function searchDeezerTrack(query) {
+    try {
+        console.log('[Deezer] Searching for:', query);
+        const res = await fetch(`https://api.deezer.com/search?q=${encodeURIComponent(query)}&limit=1`);
+
+        if (!res.ok) {
+            throw new Error(`Deezer search error: ${res.status}`);
+        }
+
+        const data = await res.json();
+        const track = data.data?.[0];
+
+        if (!track || !track.preview) {
+            console.warn('[Deezer] No preview available');
+            return null;
+        }
+
+        console.log('[Deezer] ✅ Found track with preview:', track.title, 'by', track.artist?.name);
+
+        return {
+            name: track.title,
+            artist: track.artist?.name,
+            album: track.album?.title,
+            image: track.album?.cover_medium,
+            preview_url: track.preview,
+            duration: track.duration * 1000
+        };
+    } catch (error) {
+        console.error('[Deezer] Search error:', error.message);
+        return null;
+    }
+}
+
 async function createAudioStream(youtubeUrl) {
     const { StreamType } = require('@discordjs/voice');
     
@@ -510,9 +576,10 @@ async function getInvidiousAudioUrl(videoId) {
 }
 
 /**
- * Crea uno stream audio intelligente. Prova sempre Spotify preview per primo
- * (nessun bot detection, funziona ovunque). Da lì la catena dipende da DEPLOY_ENV:
- * - "vps": si ferma dopo Spotify e lancia NO_LOCAL_STREAM — YouTube non funziona
+ * Crea uno stream audio intelligente. Prova sempre Spotify preview per primo,
+ * poi iTunes e Deezer (nessuno di questi tre ha bot detection, funzionano ovunque
+ * incluso da datacenter). Da lì la catena dipende da DEPLOY_ENV:
+ * - "vps": si ferma dopo Deezer e lancia NO_LOCAL_STREAM — YouTube non funziona
  *   da datacenter, quindi GameManager intercetta l'errore e ripiega sui file locali.
  * - altrimenti (locale): YouTube/play-dl, poi Invidious, poi yt-dlp con cookies.
  *
@@ -544,13 +611,51 @@ async function createAudioStreamSmart(query) {
         console.warn('[Audio Stream Smart] Spotify failed:', spotifyError.message);
     }
 
-    // secondo tentativo in base a piattaforma
+    // tentativo 2: iTunes preview (gratis, no auth, funziona anche da datacenter)
+    console.log('[Audio Stream Smart] Tentativo 2: iTunes preview...');
+    try {
+        const itunesTrack = await searchItunesTrack(query);
+        if (itunesTrack && itunesTrack.preview_url) {
+            console.log('[Audio Stream Smart] Found on iTunes:', itunesTrack.name);
+            const stream = await createAudioStreamFromURL(itunesTrack.preview_url, 20);
+            return {
+                ...stream,
+                source: 'itunes',
+                metadata: itunesTrack
+            };
+        } else {
+            console.warn('[Audio Stream Smart] iTunes: No preview available');
+        }
+    } catch (itunesError) {
+        console.warn('[Audio Stream Smart] iTunes failed:', itunesError.message);
+    }
+
+    // tentativo 3: Deezer preview (gratis, no auth, funziona anche da datacenter)
+    console.log('[Audio Stream Smart] Tentativo 3: Deezer preview...');
+    try {
+        const deezerTrack = await searchDeezerTrack(query);
+        if (deezerTrack && deezerTrack.preview_url) {
+            console.log('[Audio Stream Smart] Found on Deezer:', deezerTrack.name);
+            const stream = await createAudioStreamFromURL(deezerTrack.preview_url, 20);
+            return {
+                ...stream,
+                source: 'deezer',
+                metadata: deezerTrack
+            };
+        } else {
+            console.warn('[Audio Stream Smart] Deezer: No preview available');
+        }
+    } catch (deezerError) {
+        console.warn('[Audio Stream Smart] Deezer failed:', deezerError.message);
+    }
+
+    // successivo tentativo in base a piattaforma
     if(isVps) {
         // non ha senso provare yt, non funziona
         throw new Error('NO_LOCAL_STREAM'); // passo ai file locali
     } else { // provo tutti gli altri
         // YouTube/play-dl
-        console.log('[Audio Stream Smart] Tentativo 2: YouTube (play-dl)...');
+        console.log('[Audio Stream Smart] Tentativo 4: YouTube (play-dl)...');
         try {
             const youtubeVideo = await searchSong(query);
             if (youtubeVideo && youtubeVideo.url) {
@@ -567,7 +672,7 @@ async function createAudioStreamSmart(query) {
         }
     
         // Invidious 
-        console.log('[Audio Stream Smart] Tentativo 3: Invidious (no bot detection)...');
+        console.log('[Audio Stream Smart] Tentativo 5: Invidious (no bot detection)...');
         try {
             const youtubeVideo = await searchSong(query);
             if (youtubeVideo && youtubeVideo.url) {
@@ -591,7 +696,7 @@ async function createAudioStreamSmart(query) {
         }
     
         // yt-dlp 
-        console.log('[Audio Stream Smart] Tentativo 4: yt-dlp diretto...');
+        console.log('[Audio Stream Smart] Tentativo 6: yt-dlp diretto...');
         try {
             const youtubeVideo = await searchSong(query);
             if (youtubeVideo && youtubeVideo.url) {
@@ -613,11 +718,13 @@ async function createAudioStreamSmart(query) {
 }
 
 
-module.exports = { 
-    searchSong, 
+module.exports = {
+    searchSong,
     searchSpotifyTrack,
-    createAudioStream, 
-    createAudioStreamYtdlp, 
+    searchItunesTrack,
+    searchDeezerTrack,
+    createAudioStream,
+    createAudioStreamYtdlp,
     createAudioStreamFromSpotifyPreview,
     createAudioStreamInvidious,
     createAudioStreamSmart
