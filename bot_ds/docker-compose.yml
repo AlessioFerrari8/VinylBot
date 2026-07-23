@@ -2,7 +2,8 @@ services:
   vinylbot:
     build: .
     env_file: .env
-    network_mode: host
+    ports:
+      - "8888:8888"
     dns:
       - 8.8.8.8
       - 8.8.4.4
