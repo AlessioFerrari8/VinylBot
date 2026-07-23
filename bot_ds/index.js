@@ -9,6 +9,17 @@
  */
 
 require('dotenv').config();
+
+// Un errore isolato (stream audio fallito, chiamata Firestore/Spotify rigettata...) non
+// deve buttare giù l'intero processo: su un deploy single-instance significherebbe tutti
+// i server giù insieme per un problema di un round in un server solo.
+process.on('unhandledRejection', (err) => {
+  console.error('[Unhandled Rejection]', err);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[Uncaught Exception]', err);
+});
+
 const spotify = require('./spotify/client');
 const { MessageFlags } = require('discord.js');
 const { buildPlayerCard } = require('./spotify/playerUI');
