@@ -1,5 +1,6 @@
 # Stage 1: build dell'app Angular (SPA statica, nessun SSR)
-FROM node:20-alpine AS build
+# Angular 22 richiede Node >=22.22.3 per la build
+FROM node:22-alpine AS build
 
 WORKDIR /app
 
