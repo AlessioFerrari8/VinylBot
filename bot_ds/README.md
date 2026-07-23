@@ -2,7 +2,7 @@
 
 A Discord "guess the song" music quiz bot with Spotify-powered search: the bot joins your voice channel and plays a ~20s song preview, first to type the right title in chat wins the point. Per-server leaderboard, streaks, and badges — plus optional personal Spotify remote control from Discord.
 
-Live health check: [vinylbot.alessio.hackclub.app/health](https://vinylbot.alessio.hackclub.app/health) — this is the URL the website's `/status` page polls (`website/src/app/pages/status/status.ts`).
+Live health check: [vinylbot-ds.alessio.hackclub.app/health](https://vinylbot-ds.alessio.hackclub.app/health) — this is the URL the website's `/status` page polls (`website/src/app/pages/status/status.ts`).
 
 ## How it works
 

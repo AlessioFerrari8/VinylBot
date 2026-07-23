@@ -16,7 +16,7 @@ website/    # Landing page: bot info, install/download links, docs
 - **Discord** — [`bot_ds/README.md`](bot_ds/README.md): setup, commands, deploy.
 - **Slack** — [`bot_slack/README.md`](bot_slack/README.md): setup, commands, deploy.
 
-Both are documented and deployable; pick whichever platform you actually use. Live health checks: [Discord](https://vinylbot.alessio.hackclub.app/health) · [Slack](https://vinylbot-slack.alessio.hackclub.app/health) — same URLs the website's `/status` page polls.
+Both are documented and deployable; pick whichever platform you actually use. Live health checks: [Discord](https://vinylbot-ds.alessio.hackclub.app/health) · [Slack](https://vinylbot-slack.alessio.hackclub.app/health) — same URLs the website's `/status` page polls.
 
 ## Website
 
