@@ -150,6 +150,44 @@ async function searchSong(query) {
     }
 }
 
+async function searchItunesTrack(query) {
+    try {
+        const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=1`);
+        if (!res.ok) throw new Error(`iTunes search error: ${res.status}`);
+        const data = await res.json();
+        const track = data.results?.[0];
+        if (!track || !track.previewUrl) return null;
+
+        return {
+            name: track.trackName,
+            artist: track.artistName,
+            preview_url: track.previewUrl,
+        };
+    } catch (error) {
+        console.error('[iTunes] search error:', error.message);
+        return null;
+    }
+}
+
+async function searchDeezerTrack(query) {
+    try {
+        const res = await fetch(`https://api.deezer.com/search?q=${encodeURIComponent(query)}&limit=1`);
+        if (!res.ok) throw new Error(`Deezer search error: ${res.status}`);
+        const data = await res.json();
+        const track = data.data?.[0];
+        if (!track || !track.preview) return null;
+
+        return {
+            name: track.title,
+            artist: track.artist?.name,
+            preview_url: track.preview,
+        };
+    } catch (error) {
+        console.error('[Deezer] search error:', error.message);
+        return null;
+    }
+}
+
 async function searchSpotifyTrack(query) {
     try {
         const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
@@ -187,9 +225,10 @@ async function searchSpotifyTrack(query) {
 
 /**
  * Trova un estratto audio pronto (mp3, ~15s) per la query data.
- * Prova sempre Spotify preview per primo (nessun bot detection, funziona ovunque).
- * Su DEPLOY_ENV=vps si ferma qui e lancia NO_LOCAL_STREAM (YouTube è bloccato dai
- * datacenter) cosi il chiamante ripiega sui file locali; altrimenti prova anche YouTube.
+ * Prova sempre Spotify preview, poi iTunes, poi Deezer (nessuno ha bot detection,
+ * funzionano ovunque incluso da datacenter). Su DEPLOY_ENV=vps si ferma qui e lancia
+ * NO_LOCAL_STREAM (YouTube è bloccato dai datacenter) cosi il chiamante ripiega sui
+ * file locali; altrimenti prova anche YouTube.
  * @param {string} query
  * @returns {Promise<{filePath: string, source: string}>}
  */
@@ -206,6 +245,26 @@ async function createAudioClipSmart(query) {
         }
     } catch (err) {
         console.warn('[Audio Clip Smart] Spotify failed:', err.message);
+    }
+
+    try {
+        const itunesTrack = await searchItunesTrack(query);
+        if (itunesTrack) {
+            const filePath = await downloadToMp3(itunesTrack.preview_url);
+            return { filePath, source: 'itunes' };
+        }
+    } catch (err) {
+        console.warn('[Audio Clip Smart] iTunes failed:', err.message);
+    }
+
+    try {
+        const deezerTrack = await searchDeezerTrack(query);
+        if (deezerTrack) {
+            const filePath = await downloadToMp3(deezerTrack.preview_url);
+            return { filePath, source: 'deezer' };
+        }
+    } catch (err) {
+        console.warn('[Audio Clip Smart] Deezer failed:', err.message);
     }
 
     if (isVps) throw new Error('NO_LOCAL_STREAM');
