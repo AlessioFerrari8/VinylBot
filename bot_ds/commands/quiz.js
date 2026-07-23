@@ -24,31 +24,16 @@ const commands = [
                     .setName('artist')
                     .setDescription('Artist o musical genre')
                     .setRequired(true),
-            )
-            .addStringOption(option => 
-                option
-                    .setName('mode')
-                    .setDescription('Game mode')
-                    .addChoices(
-                        { name: 'local', value: 'local'},
-                        { name: 'spotify', value: 'spotify'}
-                    )
             ),
-            
-        
+
         async execute(interaction) {
             const userId = interaction.user.id;
-            // metto pure playlist nel dubbio (magari è rimasto in cache playlist e non prende artist)
-            const playlist = interaction.options.getString('playlist') || interaction.options.getString('artist');
-            const mode = interaction.options.getString('mode') || 'local';
-            
+            const artistName = interaction.options.getString('artist');
+
             await interaction.deferReply();
-            console.log('Artist option:', playlist)
-            console.log('All options:', interaction.options.data);
-            console.log('Artist option:', interaction.options.getString('artist'));
 
             try {
-                await GameManager.startGame(interaction, playlist, userId, mode);
+                await GameManager.startGame(interaction, artistName, userId);
             } catch (error) {
                 console.error(error);
                 if (error.message === 'NOT_AUTHENTICATED') {
