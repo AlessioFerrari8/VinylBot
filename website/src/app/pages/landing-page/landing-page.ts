@@ -10,6 +10,10 @@ export class LandingPage {
   private readonly shotsScroller = viewChild<ElementRef<HTMLDivElement>>('shotsScroller');
   readonly activeShot = signal(0);
 
+  // link per download
+  readonly discordInviteUrl = 'https://discord.com/oauth2/authorize?client_id=1487848371137024222&scope=bot&permissions=3148800'
+  readonly slackInviteUrl = 'https://hackclub.enterprise.slack.com/archives/C0BJLKXBQ9M'
+
   scrollShots(direction: number) {
     const el = this.shotsScroller()?.nativeElement;
     if (!el) return;

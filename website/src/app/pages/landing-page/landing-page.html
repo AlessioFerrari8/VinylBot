@@ -34,18 +34,18 @@
             </p>
 
             <div class="mt-9 flex flex-col gap-3 sm:flex-row">
-              <button class="group flex items-center justify-center gap-2 rounded-2xl bg-vb-discord px-6 py-3.5 text-base font-semibold text-white shadow-xl shadow-vb-discord/30 transition-transform hover:-translate-y-0.5 cursor-pointer">
+              <a [href]="discordInviteUrl" target="_blank" rel="noopener" class="group flex items-center justify-center gap-2 rounded-2xl bg-vb-discord px-6 py-3.5 text-base font-semibold text-white shadow-xl shadow-vb-discord/30 transition-transform hover:-translate-y-0.5 cursor-pointer">
                 Download for Discord
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-4 w-4 transition-transform group-hover:translate-x-0.5">
                   <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
                 </svg>
-              </button>
-              <button class="group flex items-center justify-center gap-2 rounded-2xl bg-vb-slack px-6 py-3.5 text-base font-semibold text-white shadow-xl shadow-vb-slack/30 transition-transform hover:-translate-y-0.5 cursor-pointer">
+              </a>
+              <a [href]="slackInviteUrl" class="group flex items-center justify-center gap-2 rounded-2xl bg-vb-slack px-6 py-3.5 text-base font-semibold text-white shadow-xl shadow-vb-slack/30 transition-transform hover:-translate-y-0.5 cursor-pointer">
                 Download for Slack
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-4 w-4 transition-transform group-hover:translate-x-0.5">
                   <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
                 </svg>
-              </button>
+              </a>
             </div>
 
             <p class="mt-5 text-sm text-white/35">
@@ -527,12 +527,12 @@
             </p>
 
             <div class="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
-              <button class="rounded-2xl bg-vb-discord px-7 py-3.5 text-base font-semibold text-white shadow-xl shadow-vb-discord/30 transition-transform hover:-translate-y-0.5 cursor-pointer">
+              <a [href]="discordInviteUrl" target="_blank" rel="noopener" class="rounded-2xl bg-vb-discord px-7 py-3.5 text-base font-semibold text-white shadow-xl shadow-vb-discord/30 transition-transform hover:-translate-y-0.5 cursor-pointer">
                 Download for Discord
-              </button>
-              <button class="rounded-2xl bg-vb-slack px-7 py-3.5 text-base font-semibold text-white shadow-xl shadow-vb-slack/30 transition-transform hover:-translate-y-0.5 cursor-pointer">
+              </a>
+              <a [href]="slackInviteUrl" class="rounded-2xl bg-vb-slack px-7 py-3.5 text-base font-semibold text-white shadow-xl shadow-vb-slack/30 transition-transform hover:-translate-y-0.5 cursor-pointer">
                 Download for Slack
-              </button>
+              </a>
             </div>
           </div>
         </div>
