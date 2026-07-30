@@ -33,11 +33,19 @@ async function searchArtist(artistName) {
 
 // Il pool deve essere molto più grande dei round di una partita (10), altrimenti ogni
 // partita consuma tutte le tracce disponibili e lo stesso artista propone sempre le
-// stesse canzoni. 50 è il massimo per pagina della search Spotify.
-const TRACK_POOL_LIMIT = 50;
+// stesse canzoni. Non si può però chiedere una pagina grande: la search rifiuta con
+// 400 "Invalid limit" qualsiasi limit sopra 10, e anche con limit 10 restituisce 5
+// risultati per pagina. L'endpoint artist top-tracks non è un'alternativa, risponde
+// Forbidden con le credenziali client (deprecato per le app registrate di recente).
+// Quindi il pool si costruisce paginando la search con l'offset: 8 pagine da 5 danno
+// 18-42 brani unici a seconda dell'artista, abbondanti per 10 round.
+const SEARCH_PAGE_LIMIT = 10;
+const SEARCH_PAGE_SIZE = 5;
+const SEARCH_PAGES = 8;
 
 /**
  * Recupera il pool di tracce da cui pescare le canzoni da indovinare.
+ * Le pagine si sovrappongono e contengono doppioni: la deduplica è a carico del chiamante.
  * @param {Object} artist - Artista Spotify restituito da searchArtist (serve l'id per il filtro)
  * @returns {Promise<Array>}
  */
@@ -46,8 +54,23 @@ async function getArtistTracks(artist) {
     const auth = await api.clientCredentialsGrant();
     api.setAccessToken(auth.body.access_token);
 
-    const result = await api.searchTracks(`artist:"${artist.name}"`, { limit: TRACK_POOL_LIMIT });
-    const items = result.body.tracks.items;
+    const query = `artist:"${artist.name}"`;
+    const offsets = Array.from({ length: SEARCH_PAGES }, (_, i) => i * SEARCH_PAGE_SIZE);
+
+    const pages = await Promise.all(offsets.map(offset =>
+        api.searchTracks(query, { limit: SEARCH_PAGE_LIMIT, offset })
+            .then(res => res.body.tracks.items)
+            // Una pagina persa (offset oltre i risultati dell'artista, rate limit) non deve
+            // far fallire l'intero pool: si tiene quello che è arrivato dalle altre.
+            .catch(err => {
+                // statusCode esplicito: la libreria a volte lascia message vuoto e senza
+                // questo il log non direbbe se è un 429 (rate limit) o altro.
+                console.warn(`[Spotify] pagina offset=${offset} scartata: status=${err.statusCode} ${err.message || ''}`);
+                return [];
+            })
+    ));
+
+    const items = pages.flat();
 
     // La search è testuale: restituisce anche cover e omonimi. Tengo solo le tracce
     // davvero attribuite all'artista trovato, ma se il filtro svuota tutto ripiego sui
