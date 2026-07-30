@@ -10,10 +10,61 @@ const database = require('../db/firestore');
 const activeRounds = new Map();
 
 const ROUND_MS = 30000;
-const HINT_MS = 15000;
+
+// Hint progressivi invece di uno solo: il primo dà le iniziali, i successivi svelano
+// lettere sparse nel mezzo. L'ultimo cade con qualche secondo di margine sulla fine del
+// round, così resta il tempo di scrivere la risposta.
+const HINT_SCHEDULE_MS = [10000, 18000, 24000];
+
+// Quota (cumulativa) delle lettere nascoste svelata a ogni hint: il primo è solo iniziali.
+const HINT_REVEAL_RATIO = [0, 0.35, 0.6];
 
 /**
- * Avvia un nuovo round: 30 secondi per rispondere, hint dopo 15.
+ * Maschera il titolo lasciando visibili solo i caratteri agli indici in `revealed`.
+ * Gli underscore sono escapati perché su Slack `_testo_` diventa corsivo.
+ */
+function maskTitle(chars, revealed) {
+    return chars.map((ch, i) => (ch === ' ' ? ' ' : revealed.has(i) ? ch : '\\_')).join('');
+}
+
+/**
+ * Prepara la sequenza di hint per un titolo. Sempre visibili: spazi, punteggiatura e
+ * l'iniziale di ogni parola; le altre lettere vengono svelate in ordine casuale, così
+ * gli hint successivi riempiono buchi sparsi invece di scoprire il titolo da sinistra.
+ * @returns {string[]} un hint per ogni soglia di HINT_SCHEDULE_MS
+ */
+function buildHints(title) {
+    const chars = [...title];
+    const revealed = new Set();
+    const maskable = [];
+
+    let wordStart = true;
+    chars.forEach((ch, i) => {
+        if (ch === ' ') { wordStart = true; return; }
+        if (!/[\p{L}\p{N}]/u.test(ch)) { revealed.add(i); return; }
+        if (wordStart) { revealed.add(i); wordStart = false; return; }
+        maskable.push(i);
+    });
+
+    for (let i = maskable.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [maskable[i], maskable[j]] = [maskable[j], maskable[i]];
+    }
+
+    // revealed viene mutato a ogni giro: gli hint sono cumulativi, una lettera già
+    // svelata non torna coperta.
+    const hints = HINT_REVEAL_RATIO.map(ratio => {
+        maskable.slice(0, Math.floor(maskable.length * ratio)).forEach(i => revealed.add(i));
+        return maskTitle(chars, revealed);
+    });
+
+    // Su titoli corti due soglie possono svelare le stesse lettere: evito di postare
+    // due volte di fila un hint identico.
+    return hints.filter((hint, i) => i === 0 || hint !== hints[i - 1]);
+}
+
+/**
+ * Avvia un nuovo round: 30 secondi per rispondere, con hint progressivi lungo il round.
  * @param {Object} params - { client, channelId, gameManager, gameState }
  */
 function startRound({ client, channelId, gameManager, gameState }) {
@@ -22,18 +73,23 @@ function startRound({ client, channelId, gameManager, gameState }) {
     const round = {
         roundEnded: false,
         guessers: new Set(),
+        hintTimeouts: [],
     };
 
-    round.hintTimeout = setTimeout(() => {
-        const currentSong = gameManager.getCurrentSong(channelId);
-        if (!currentSong) return;
-        const hint = currentSong.title
-            .split(' ')
-            .map(w => w[0] + '\\_'.repeat(Math.max(w.length - 1, 0)))
-            .join(' ');
-        client.chat.postMessage({ channel: channelId, text: `💡 *Hint:* ${hint}` })
-            .catch(err => console.error('[RoundHandler] hint postMessage failed:', err.message));
-    }, HINT_MS);
+    // Gli hint sono calcolati una volta sola a inizio round: ricalcolarli a ogni scadenza
+    // rimescolerebbe le posizioni casuali e un hint potrebbe "ricoprire" lettere già viste.
+    const currentSong = gameManager.getCurrentSong(channelId);
+    const hints = currentSong ? buildHints(currentSong.title) : [];
+
+    hints.forEach((hint, index) => {
+        round.hintTimeouts.push(setTimeout(() => {
+            if (round.roundEnded) return;
+            client.chat.postMessage({
+                channel: channelId,
+                text: `💡 *Hint ${index + 1}/${hints.length}:* ${hint}`,
+            }).catch(err => console.error('[RoundHandler] hint postMessage failed:', err.message));
+        }, HINT_SCHEDULE_MS[index]));
+    });
 
     // async dentro setTimeout: senza try/catch una singola await rigettata (Slack API
     // rate-limit, Firestore giù...) sarebbe una unhandled rejection che crasha l'intero
@@ -67,7 +123,7 @@ function startRound({ client, channelId, gameManager, gameState }) {
 function stopRound(channelId) {
     const round = activeRounds.get(channelId);
     if (!round) return;
-    clearTimeout(round.hintTimeout);
+    round.hintTimeouts.forEach(clearTimeout);
     clearTimeout(round.endTimeout);
     activeRounds.delete(channelId);
 }
@@ -94,7 +150,7 @@ async function handleMessage({ client, gameManager, channelId, userId, text }) {
     if (!correct) return;
 
     round.roundEnded = true;
-    clearTimeout(round.hintTimeout);
+    round.hintTimeouts.forEach(clearTimeout);
     clearTimeout(round.endTimeout);
     activeRounds.delete(channelId);
 
