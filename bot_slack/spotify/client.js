@@ -31,18 +31,29 @@ async function searchArtist(artistName) {
     }
 }
 
+// Il pool deve essere molto più grande dei round di una partita (10), altrimenti ogni
+// partita consuma tutte le tracce disponibili e lo stesso artista propone sempre le
+// stesse canzoni. 50 è il massimo per pagina della search Spotify.
+const TRACK_POOL_LIMIT = 50;
+
 /**
- * Recupera fino a 10 tracce di un artista (usato come pool di canzoni da indovinare).
- * @param {string} artistName
+ * Recupera il pool di tracce da cui pescare le canzoni da indovinare.
+ * @param {Object} artist - Artista Spotify restituito da searchArtist (serve l'id per il filtro)
  * @returns {Promise<Array>}
  */
-async function getArtistTopTracks(artistName) {
+async function getArtistTracks(artist) {
     const api = makeApi();
     const auth = await api.clientCredentialsGrant();
     api.setAccessToken(auth.body.access_token);
 
-    const result = await api.searchTracks(`artist:${artistName}`, { limit: 10 });
-    return result.body.tracks.items;
+    const result = await api.searchTracks(`artist:"${artist.name}"`, { limit: TRACK_POOL_LIMIT });
+    const items = result.body.tracks.items;
+
+    // La search è testuale: restituisce anche cover e omonimi. Tengo solo le tracce
+    // davvero attribuite all'artista trovato, ma se il filtro svuota tutto ripiego sui
+    // risultati grezzi piuttosto che far fallire la partita.
+    const own = items.filter(track => track.artists.some(a => a.id === artist.id));
+    return own.length ? own : items;
 }
 
-module.exports = { searchArtist, getArtistTopTracks };
+module.exports = { searchArtist, getArtistTracks };

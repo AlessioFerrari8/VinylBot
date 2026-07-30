@@ -21,6 +21,13 @@ localMusic.loadSongs();
 
 const MAX_ROUNDS = 10;
 
+/** @type {Map<string, string[]>} channelId -> titoli usciti nelle partite recenti */
+const recentTitles = new Map();
+
+// Quante canzoni ricordare per canale tra una partita e l'altra: due partite piene, così
+// rigiocare subito lo stesso artista dà un set diverso invece delle solite canzoni.
+const RECENT_MEMORY = MAX_ROUNDS * 2;
+
 /**
  * Escapa i caratteri speciali di Slack prima di interpolare testo utente in un messaggio
  * non-ephemeral: senza questo, un artistName tipo "<!channel>" o "<!here>" verrebbe
@@ -41,6 +48,65 @@ function cleanTitle(title) {
         .replace(/[-–—].*/g, '')
         .trim()
         .replace(/\s+/g, ' ');
+}
+
+/** Chiave di confronto tra tracce: la stessa canzone compare più volte con nomi diversi. */
+function trackKey(track) {
+    return cleanTitle(track.name).toLowerCase();
+}
+
+/**
+ * Toglie i doppioni dal pool. La search Spotify restituisce la stessa canzone più volte
+ * (album diversi, remaster, versioni live) come track distinte: senza dedup il pool è
+ * molto più piccolo di quanto sembri e la partita ripropone sempre gli stessi brani.
+ */
+function dedupeTracks(tracks) {
+    const seen = new Set();
+    return tracks.filter(track => {
+        const key = trackKey(track);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
+
+/** Segna una canzone come "appena uscita" su questo canale, per le partite successive. */
+function rememberTrack(channelId, track) {
+    const key = trackKey(track);
+    const previous = (recentTitles.get(channelId) || []).filter(k => k !== key);
+    recentTitles.set(channelId, [key, ...previous].slice(0, RECENT_MEMORY));
+}
+
+/**
+ * Sceglie la prossima canzone: mai una già uscita in questa partita e, a parità di
+ * scelta, preferisce quelle che non sono uscite nemmeno nelle partite recenti sullo
+ * stesso canale. Se il pool si esaurisce si riparte da capo invece di bloccare il gioco.
+ * @returns {Object} track Spotify
+ */
+function pickTrack(channelId, gameState) {
+    const played = new Set(gameState.playedTracks.map(trackKey));
+    let pool = gameState.tracks.filter(track => !played.has(trackKey(track)));
+    if (!pool.length) {
+        // Pool esaurito (artista con meno brani dei round): si ricomincia il giro, ma
+        // l'ultima canzone resta esclusa, altrimenti sul cambio di giro uscirebbe due
+        // volte di fila. Se l'artista ha un solo brano non c'è alternativa.
+        const last = gameState.playedTracks[gameState.playedTracks.length - 1];
+        gameState.playedTracks = last ? [last] : [];
+        pool = last ? gameState.tracks.filter(track => trackKey(track) !== trackKey(last)) : gameState.tracks;
+        if (!pool.length) pool = gameState.tracks;
+    }
+
+    // avoidTitles è la fotografia scattata a inizio partita, non la mappa viva: leggendo
+    // recentTitles ad ogni round la partita in corso eroderebbe la propria memoria
+    // (ogni canzone nuova espelle la più vecchia), e a metà partita i brani di due
+    // partite fa tornerebbero pescabili.
+    const fresh = pool.filter(track => !gameState.avoidTitles.has(trackKey(track)));
+    if (fresh.length) pool = fresh;
+
+    const track = pool[Math.floor(Math.random() * pool.length)];
+    gameState.playedTracks.push(track);
+    rememberTrack(channelId, track);
+    return track;
 }
 
 /**
@@ -103,13 +169,22 @@ async function startGame({ client, channelId, teamId, artistName }) {
         return;
     }
 
-    const tracks = await spotify.getArtistTopTracks(artistName);
-    if (!tracks || !tracks.length) {
+    const tracks = dedupeTracks(await spotify.getArtistTracks(artist));
+    if (!tracks.length) {
         await client.chat.postMessage({ channel: channelId, text: `No tracks found for *${escapeSlackText(artistName)}*` });
         return;
     }
 
-    const track = tracks[Math.floor(Math.random() * tracks.length)];
+    const gameState = {
+        teamId,
+        currentSong: null,
+        tracks,
+        playedTracks: [],
+        avoidTitles: new Set(recentTitles.get(channelId) || []),
+        roundNumber: 1,
+    };
+
+    const track = pickTrack(channelId, gameState);
     const audio = await resolveTrackAudio(track);
     if (!audio) {
         await client.chat.postMessage({ channel: channelId, text: 'No results found!' });
@@ -118,13 +193,7 @@ async function startGame({ client, channelId, teamId, artistName }) {
 
     await postClip(client, channelId, audio, 'Round 1 - Guess the song! 🎵');
 
-    const gameState = {
-        teamId,
-        currentSong: audio.currentSong,
-        tracks,
-        playedTracks: [track],
-        roundNumber: 1,
-    };
+    gameState.currentSong = audio.currentSong;
     games.set(channelId, gameState);
 
     RoundHandler.startRound({ client, channelId, gameManager: module.exports, gameState });
@@ -166,18 +235,7 @@ async function nextRound({ client, channelId }) {
     const MAX_TRACK_ATTEMPTS = 3;
     let audio = null;
     for (let attempt = 0; attempt < MAX_TRACK_ATTEMPTS && !audio; attempt++) {
-        // Confronto per nome, non per oggetto: la stessa canzone spesso compare più volte
-        // nei risultati Spotify (album diversi/remaster) come oggetti track distinti.
-        const playedNames = new Set(gameState.playedTracks.map(t => t.name));
-        let unplayed = gameState.tracks.filter(t => !playedNames.has(t.name));
-        if (unplayed.length === 0) {
-            gameState.playedTracks = [];
-            unplayed = gameState.tracks;
-        }
-        const track = unplayed[Math.floor(Math.random() * unplayed.length)];
-        gameState.playedTracks.push(track);
-
-        audio = await resolveTrackAudio(track);
+        audio = await resolveTrackAudio(pickTrack(channelId, gameState));
     }
 
     if (!audio) {
